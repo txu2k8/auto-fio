@@ -13,7 +13,7 @@ from loguru import logger
 from config import LOG_DIR, read_yaml
 from fio.models import RWTypeEnum
 from fio.loader import load_client, load_fio_result
-from fio.command_generator import FIOCmdGen
+from fio.fio_option import FIOOption
 
 
 class FIORunner(object):

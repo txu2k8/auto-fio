@@ -32,6 +32,22 @@ RWTypeEnum.write.description = "测试顺序写的 I/O"
 RWTypeEnum.rw.description = "测试顺序混合写和读的 I/O"
 
 
+class FIOKwargs(BaseModel):
+    """FIO参数 - 模型"""
+    fio_bin: Text = "fio"
+    directory: Text
+    rw: RWTypeEnum
+    bs: Text = '4K'
+    size: Text = '100M'
+    numjobs: int = 1
+    iodepth: int = 4
+    time_based: bool = True
+    runtime: int = 120
+    ioengine: Text = "libaio"
+    direct: int = 1
+    group_reporting: bool = True
+
+
 class Client(BaseModel):
     """客户端 - 参数模型"""
     ip: Text = ''
