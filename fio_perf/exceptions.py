@@ -17,6 +17,10 @@ class FileFormatError(MyBaseError):
     pass
 
 
+class BenchSettingsFormatError(FileFormatError):
+    pass
+
+
 class ClientFormatError(FileFormatError):
     pass
 

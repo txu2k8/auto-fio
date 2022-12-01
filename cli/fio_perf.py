@@ -9,27 +9,28 @@
 """
 import sys
 import re
+from typing import List, Text
 from datetime import datetime
 from loguru import logger
 import typer
 
 from cli.log import init_logger
 from cli.main import app
-from cosbench.models import WorkloadTypeEnum
-from cosbench.runner import CosBenchRunner
+from fio_perf.models import RWTypeEnum
+from fio_perf.runner import FIORunner
 
 
-def init_print(case_id, desc, bucket_num, obj_num, workers, testbed):
+def init_print(case_id, desc, **kwargs):
     logger.log('DESC', '{0}基本信息{0}'.format('*' * 20))
     logger.log('DESC', "测试用例: {}".format(case_id))
     logger.log('DESC', '测试描述：{}'.format(desc))
-    logger.log('DESC', '桶数：{}'.format(bucket_num))
-    logger.log('DESC', '对象数：{}'.format(obj_num))
-    logger.log('DESC', '并发数：{}'.format(workers))
     command = 'python3 ' + ' '.join(sys.argv)
     logger.log('DESC', '执行命令：{}'.format(command))
     logger.log('DESC', '执行时间：{}'.format(datetime.now()))
-    logger.log('DESC', '测试床：{}'.format(testbed))
+    for k, v in kwargs.items():
+        if k == "rw":
+            v = [x.value for x in v]
+        logger.log('DESC', '{}：{}'.format(k, v))
     logger.log('DESC', '*' * 48)
 
 
@@ -50,44 +51,60 @@ def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str
     return second
 
 
-@app.command(help='cosbench perf - 1：读性能测试')
+@app.command(help='FIO perf - 1：读性能测试')
 def perf_read(
-        testbed: str = typer.Option('', help="测试环境配置文件路径"),
-        bucket_prefix: str = typer.Option('cosbench', help="桶名称前缀"),
-        bucket_num: int = typer.Option(32, min=1, help="桶数量，对象会被均衡写入到各个桶中"),
-        obj_prefix: str = typer.Option('data', help="对象名前缀"),
-        obj_num: int = typer.Option(60, min=1, help="对象数"),
-        obj_size: str = typer.Option('128MB', help="对象SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
-        workers: int = typer.Option(1, min=1, help="总并发数"),
+        template: str = typer.Option('/a.ini', help="FIO测试配置文件路径"),
+        target: List[str] = typer.Option(['D:\\minio\\'], help="FIO测试目标路径【列表】"),
+        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),
+        iodepth: List[int] = typer.Option([1, 2], help="队列深度【列表】"),
+        numjobs: List[int] = typer.Option([1, 16], help="并发数【列表】"),
+        bs: List[Text] = typer.Option(['128MB'], help="文件SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
+
+        clean: bool = typer.Option(False, help="执行完成后清理数据"),
+        trace: bool = typer.Option(False, help="print TRACE level log"),
+        case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
+        desc: str = typer.Option('', help="测试描述"),
+):
+    init_logger(prefix='fio', case_id=case_id, trace=trace)
+    init_print(case_id, desc, **{
+        "target": target,
+        "template": template,
+        "rw": rw,
+        "iodepth": iodepth,
+        "numjobs": numjobs,
+        "bs": bs,
+        "clean": clean,
+    })
+    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, clean=clean)
+    runner.run()
+
+
+@app.command(help='FIO perf - 1：写性能测试')
+def perf_write(
+        target: str = typer.Option('', help="FIO测试目标路径"),
+        template: str = typer.Option('', help="FIO测试配置文件路径"),
+        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),
+        iodepth: List[int] = typer.Option([1], help="队列深度【列表】"),
+        numjobs: List[int] = typer.Option([1], help="并发数【列表】"),
+        bs: str = typer.Option('4K', help="对象SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
+
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         trace: bool = typer.Option(False, help="print TRACE level log"),
         case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
         desc: str = typer.Option('', help="测试描述"),
 ):
     init_logger(prefix='cosbench', case_id=case_id, trace=trace)
-    init_print(case_id, desc, bucket_num, obj_num, workers, testbed)
-    cr = CosBenchRunner(testbed, bucket_prefix, bucket_num, obj_prefix, obj_num, obj_size, workers, clean)
-    cr.run(WorkloadTypeEnum.read)
-
-
-@app.command(help='cosbench perf - 1：写性能测试')
-def perf_write(
-        testbed: str = typer.Option('', help="测试环境配置文件路径"),
-        bucket_prefix: str = typer.Option('cosbench', help="桶名称前缀"),
-        bucket_num: int = typer.Option(32, min=1, help="桶数量，对象会被均衡写入到各个桶中"),
-        obj_prefix: str = typer.Option('data', help="对象名前缀"),
-        obj_num: int = typer.Option(60, min=1, help="对象数"),
-        obj_size: str = typer.Option('128MB', help="对象SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
-        workers: int = typer.Option(1, min=1, help="总并发数"),
-        clean: bool = typer.Option(False, help="执行完成后清理数据"),
-        trace: bool = typer.Option(False, help="print TRACE level log"),
-        case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
-        desc: str = typer.Option('', help="测试描述"),
-):
-    init_logger(prefix='cosbench_perf_write', case_id=case_id, trace=trace)
-    init_print(case_id, desc, bucket_num, obj_num, workers, testbed)
-    cr = CosBenchRunner(testbed, bucket_prefix, bucket_num, obj_prefix, obj_num, obj_size, workers, clean)
-    cr.run(WorkloadTypeEnum.write)
+    init_print(case_id, desc, **{
+        "target": target,
+        "template": template,
+        "rw": rw,
+        "iodepth": iodepth,
+        "numjobs": numjobs,
+        "bs": bs,
+        "clean": clean,
+    })
+    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, clean=clean)
+    runner.run()
 
 
 if __name__ == "__main__":

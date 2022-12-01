@@ -17,3 +17,5 @@ six==1.16.0
 typer==0.6.1
 typing_extensions==4.3.0
 win32-setctime==1.1.0
+
+numpy~=1.23.5

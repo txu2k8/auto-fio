@@ -7,7 +7,13 @@
 @email:tao.xu2008@outlook.com
 @description:
 """
+import sys
 from cli.main import app
 
+
 if __name__ == '__main__':
-    app()
+    try:
+        app()
+    except KeyboardInterrupt:
+        print("\nControl-C pressed - quitting...")
+        sys.exit(1)

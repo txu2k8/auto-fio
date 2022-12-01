@@ -10,8 +10,20 @@
 from typing import Dict
 from pydantic import ValidationError
 
-from fio import exceptions
-from fio.models import Client, FIOResult
+from fio_perf import exceptions
+from fio_perf.models import FIOSettings, Client, FIOResult
+
+
+def load_bench_settings(data: Dict) -> FIOSettings:
+    """将 FIOResult 数据（字典）转成 FIOResult 对象"""
+    try:
+        # validate with pydantic Node model
+        fio_s_obj = FIOSettings.parse_obj(data)
+    except ValidationError as ex:
+        err_msg = f"BenchSettings ValidationError:\nerror: {ex}\ncontent: {data}"
+        raise exceptions.BenchSettingsFormatError(err_msg)
+
+    return fio_s_obj
 
 
 def load_client(data: Dict) -> Client:
