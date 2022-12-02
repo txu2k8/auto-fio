@@ -59,7 +59,7 @@ class FIOSettings(BaseModel):
     iodepth: List[int] = [1, 2, 4, 8, 16, 32, 64]
     numjobs: List[int] = [1, 2, 4, 8, 16, 32, 64]
     bs: List[Text] = ['4K']
-    rwmixread: List[int] = [0]  # 混合读写时，读占比
+    rwmixread: List[int] = []  # 混合读写时，读占比
 
     # 所有测试统一参数
     size: Text = '100M'

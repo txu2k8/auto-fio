@@ -60,7 +60,7 @@ def perf(
         iodepth: List[int] = typer.Option([1, 2], help="队列深度【列表】"),
         numjobs: List[int] = typer.Option([1, 16], help="并发数【列表】"),
         bs: List[Text] = typer.Option(['4K'], help="Block Size，格式：1M，支持单位(B/K/M)"),
-        rwmixread: List[int] = typer.Option([0], help="混合读写->读占比（百分比）"),
+        rwmixread: List[int] = typer.Option([], help="混合读写->读占比（百分比）"),
 
         size: Text = typer.Option('100M', help="单个文件大小，格式：1M，支持单位(B/K/M/G)"),
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
