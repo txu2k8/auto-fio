@@ -22,6 +22,7 @@ class RWTypeEnum(str, Enum):
     read = "read"  # 测试顺序读的 I/O
     write = "write"  # 测试顺序写的 I/O
     rw = "rw"  # 测试顺序混合写和读的 I/O
+    readwrite = "readwrite"  # 测试顺序混合写和读的 I/O, 等同rw
 
 
 RWTypeEnum.randwread.description = "测试随机读的 I/O"
@@ -53,11 +54,12 @@ class FIOSettings(BaseModel):
     # 测试目标、参数模板
     template: Text = ""  # FIO命令行参数配置文件
     target: List[Text]
-    # FIO 遍历参数列表
+    # FIO 遍历参数列表，参数传递
     rw: List[Text] = [RWTypeEnum.randwread.value, RWTypeEnum.randwrite.value]
     iodepth: List[int] = [1, 2, 4, 8, 16, 32, 64]
     numjobs: List[int] = [1, 2, 4, 8, 16, 32, 64]
     bs: List[Text] = ['4K']
+    rwmixread: List[int] = [0]  # 混合读写时，读占比
 
     # 所有测试统一参数
     size: Text = '100M'
@@ -68,11 +70,11 @@ class FIOSettings(BaseModel):
     group_reporting: bool = True
 
     entire_device: bool = False
-    destructive: bool = False
+    destructive: bool = True
     ss: bool = False  # Detect steady state
     ss_dur: Text = None  # Steady state rolling window
     ss_ramp: Text = None  # Steady state rampup
-    rwmixread: Text = None
+
     extra_opts: List = []  # 其他参数
 
     # 框架相关参数

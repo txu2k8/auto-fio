@@ -56,10 +56,12 @@ def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str
 def perf(
         template: str = typer.Option('', help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）"),
         target: List[str] = typer.Option(['D:\\minio\\'], help="FIO测试目标路径【列表】"),
-        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),
+        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randrw], help="测试类型【列表】"),
         iodepth: List[int] = typer.Option([1, 2], help="队列深度【列表】"),
         numjobs: List[int] = typer.Option([1, 16], help="并发数【列表】"),
         bs: List[Text] = typer.Option(['4K'], help="Block Size，格式：1M，支持单位(B/K/M)"),
+        rwmixread: List[int] = typer.Option([0], help="混合读写->读占比（百分比）"),
+
         size: Text = typer.Option('100M', help="单个文件大小，格式：1M，支持单位(B/K/M/G)"),
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
 
@@ -79,8 +81,8 @@ def perf(
         "clean": clean,
     })
     runner = FIORunner(
-        target, template, rw, iodepth, numjobs, bs, output,
-        size=size, clean=clean
+        target, template, rw, iodepth, numjobs, bs, rwmixread,
+        size=size, output=output, clean=clean
     )
     runner.run()
 

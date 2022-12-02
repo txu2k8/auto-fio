@@ -17,7 +17,7 @@ import subprocess
 from loguru import logger
 from numpy import linspace
 
-from fio_perf import display
+from fio_perf import display, loader
 from fio_perf.models import FIOSettings, FIOKwargs
 
 
@@ -66,7 +66,7 @@ def progress_bar(iter_obj):
 class FIORunner(object):
     """FIO 执行引擎"""
 
-    def __init__(self, target, template, rw, iodepth, numjobs, bs, output, *args, **kwargs):
+    def __init__(self, target, template, rw, iodepth, numjobs, bs, rwmixread, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
 
@@ -77,8 +77,9 @@ class FIORunner(object):
             iodepth=iodepth,
             numjobs=numjobs,
             bs=bs,
+            rwmixread=rwmixread,
             size=kwargs["size"],
-            output=os.path.abspath(output),
+            output=os.path.abspath(kwargs["output"]),
         )
         # print(self.settings)
 
@@ -210,7 +211,7 @@ class FIORunner(object):
         """
         logger.log("STAGE", "聚合FIO参数和配置文件内容参数...")
         custom_settings = {}
-        self.settings = {**self.settings, **custom_settings}
+        self.settings = loader.load_bench_settings({**dict(self.settings), **custom_settings})
         self.check_settings()
 
     def generate_output_directory(self, test):
@@ -314,11 +315,16 @@ class FIORunner(object):
             self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
         output_file = f"{output_directory}/{test['rw']}-{test['iodepth']}-{test['numjobs']}.json"
+        if test["rw"] in self.settings.mixed:
+            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
+        else:
+            test_name = f"{test['rw']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
 
         command = [
             "fio",
             "--output-format=json",
             f"--output={output_file}",
+            f"--name={test_name}",
         ]
         if self.settings.template:
             command.append(self.settings.template)
@@ -334,7 +340,9 @@ class FIORunner(object):
             return
 
         self.make_directory(output_directory)
-        return self._exec(command)
+        rc, output = self._exec(command)
+        logger.info(output)
+        return
 
     def run(self):
         """
@@ -344,6 +352,7 @@ class FIORunner(object):
         # 检查环境
         # self.is_fio_installed()
         # self.check_encoding()
+        self.gather_settings()
         display.display_header(self.settings)
 
         self.generate_test_list()
