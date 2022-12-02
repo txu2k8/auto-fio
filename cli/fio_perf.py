@@ -52,8 +52,8 @@ def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str
     return second
 
 
-@app.command(help='FIO perf - 1：读性能测试')
-def perf_read(
+@app.command(help='FIO性能测试')
+def perf(
         template: str = typer.Option('', help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）"),
         target: List[str] = typer.Option(['D:\\minio\\'], help="FIO测试目标路径【列表】"),
         rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),

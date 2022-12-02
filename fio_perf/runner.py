@@ -275,8 +275,8 @@ class FIORunner(object):
             command.append(f"--runtime={self.settings.runtime}")
         if self.settings.time_based:
             command.append("--time_based")
-        command.append(f"ioengine={self.settings.ioengine}")
-        command.append(f"direct={self.settings.direct}")
+        command.append(f"--ioengine={self.settings.ioengine}")
+        command.append(f"--direct={self.settings.direct}")
         if self.settings.group_reporting:
             command.append("--group_reporting")
 
