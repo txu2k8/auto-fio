@@ -60,7 +60,6 @@ class FIOSettings(BaseModel):
     bs: List[Text] = ['4K']
 
     # 所有测试统一参数
-    type: Text = "directory"
     size: Text = '100M'
     runtime: int = 60
     time_based: bool = True
@@ -77,6 +76,8 @@ class FIOSettings(BaseModel):
     extra_opts: List = []  # 其他参数
 
     # 框架相关参数
+    drop_caches: bool = True
+    type: Text = "directory"
     dry_run: bool = False
     quiet: bool = True
     output: Text = "./"
@@ -98,7 +99,13 @@ class FIOSettings(BaseModel):
         "mixed",
         "quiet",
     ]
-    descriptions = {
+
+    # 计算保存数据
+    tests: List = []
+
+
+# FIO参数描述
+DESCRIPTIONS = {
         "target": "Test target",
         "template": "Job template",
         "ioengine": "I/O Engine",
@@ -113,11 +120,11 @@ class FIOSettings(BaseModel):
         "extra_opts": "Extra custom options",
         "loginterval": "Log interval of perf data (ms)",
         "invalidate": "Invalidate buffer cache",
-        "loops": "Benchmark loops",
+        "loops": "run loops",
         "type": "Target type",
         "output": "Output folder",
         "time_based": "Time based",
-        "tests": "benchmark tests",
+        "tests": "run tests",
         "benchmarks": "Number of benchmarks",
         "precondition": "Run precondition workload",
         "precondition_template": "Precondition template",
@@ -131,12 +138,6 @@ class FIOSettings(BaseModel):
 
         "group_reporting": "group reporting"
     }
-
-    # 计算保存数据
-    tests: List = []
-
-
-
 
 
 class Client(BaseModel):

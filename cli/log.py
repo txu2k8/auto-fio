@@ -51,6 +51,8 @@ def init_logger(prefix='test', case_id=0, trace=False):
     logger.remove()
 
     # 新增级别
+    logger.level('STAGE', no=21, color='<blue><bold>')  # INFO < STAGE < ERROR
+    logger.level('RUN', no=22, color='<blue><bold>')  # INFO < MC < ERROR
     logger.level('DESC', no=52)  # CRITICAL < DESC，打印描述信息到所有日志文件
 
     # 初始化控制台配置

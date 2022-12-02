@@ -17,8 +17,6 @@ import subprocess
 from loguru import logger
 from numpy import linspace
 
-from config import LOG_DIR
-from fio_perf import default_settings
 from fio_perf import display
 from fio_perf.models import FIOSettings, FIOKwargs, RWTypeEnum
 
@@ -68,7 +66,7 @@ def progress_bar(iter_obj):
 class FIORunner(object):
     """FIO 执行引擎"""
 
-    def __init__(self, target, template, rw, iodepth, numjobs, bs, *args, **kwargs):
+    def __init__(self, target, template, rw, iodepth, numjobs, bs, output, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
 
@@ -79,21 +77,26 @@ class FIORunner(object):
             iodepth=iodepth,
             numjobs=numjobs,
             bs=bs,
-            output=LOG_DIR,
+            size=kwargs["size"],
+            output=os.path.abspath(output),
         )
         # print(self.settings)
 
     @staticmethod
     def _exec(cmd):
+        logger.log("RUN",  " ".join(cmd))
         rc, output = subprocess.getstatusoutput(cmd)
         logger.debug(output.strip('\n'))
         return rc, output
 
     def is_fio_installed(self):
+        logger.log("STAGE", "检查FIO工具是否安装...")
         command = "fio_perf"
         if shutil.which(command) is None:
             logger.error("Fio executable not found in path. Is Fio installed?")
             sys.exit(1)
+
+        logger.log("STAGE", "检查FIO工具版本...")
         command = ["fio", "--version"]
         rc, output = self._exec(command)
         result = output.strip()
@@ -107,6 +110,7 @@ class FIORunner(object):
             sys.exit(1)
 
     def drop_caches(self):
+        # logger.info("清除环境cache...")
         command = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
         self._exec(command)
 
@@ -114,6 +118,7 @@ class FIORunner(object):
     def make_directory(directory):
         try:
             if not os.path.exists(directory):
+                logger.log("STAGE", f"创建FIO测试结果保存目录：{directory}")
                 os.makedirs(directory)
         except OSError:
             logger.error(f"Failed to create {directory}")
@@ -121,6 +126,7 @@ class FIORunner(object):
 
     @staticmethod
     def check_encoding():
+        logger.log("STAGE", "检查环境 ENCODING是否为UTF-8")
         try:
             print("\u3000")  # blank space
         except UnicodeEncodeError:
@@ -135,6 +141,7 @@ class FIORunner(object):
         检查配置 有效性
         :return:
         """
+        logger.log("STAGE", "检查FIO参数配置有效性...")
         if self.settings.type not in ["device", "rbd"] and not self.settings.size:
             logger.error("When the target is a file or directory, --size must be specified.")
             sys.exit(4)
@@ -159,7 +166,8 @@ class FIORunner(object):
             else:
                 self.settings.filter_items.append("rwmixread")
 
-    def check_target_type(self, target, filetype):
+    @staticmethod
+    def check_target_type(target, filetype):
         """
         Validate path and file / directory type.
         It also returns the appropritate fio command line parameter based on the
@@ -176,7 +184,7 @@ class FIORunner(object):
         if not filetype == "rbd":
 
             if not os.path.exists(target):
-                logger.error(f"Benchmark target {filetype} {target} does not exist.")
+                logger.error(f"Target {filetype} {target} does not exist.")
                 sys.exit(10)
 
             if filetype not in keys:
@@ -200,22 +208,21 @@ class FIORunner(object):
         聚合默认配置和用户自定义配置
         :return:
         """
+        logger.log("STAGE", "聚合FIO参数和配置文件内容参数...")
         custom_settings = {}
         self.settings = {**self.settings, **custom_settings}
         self.check_settings()
-        return
 
     def generate_output_directory(self, test):
         if test["rw"] in self.settings.mixed:
-            directory = (
-                f"{self.settings.output}/{os.path.basename(test['target'])}/"
-                f"{test['rw']}{test['rwmixread']}/{test['bs']}"
+            directory = os.path.join(
+                self.settings.output, os.path.basename(test['target']), f"{test['rw']}{test['rwmixread']}", test['bs']
             )
         else:
-            directory = f"{self.settings.output}/{os.path.basename(test['target'])}/{test['bs']}"
+            directory = os.path.join(self.settings.output, os.path.basename(test['target']), test['bs'])
 
         if "run" in test.keys():
-            directory = directory + f"/run-{test['run']}"
+            directory = os.path.join(directory, f"run-{test['run']}")
 
         return directory
 
@@ -224,6 +231,7 @@ class FIORunner(object):
         根据输入的参数列表，遍历生成待测试的条件组合
         :return:
         """
+        logger.log("STAGE", "条件组合生成待测试项...")
         loop_items = self.settings.loop_items
         dict_settings = dict(self.settings)
         dataset = []
@@ -254,14 +262,29 @@ class FIORunner(object):
         return _cmd
 
     def expand_command_line(self, command, test):
+        """
+        生成测试命令
+        :param command:
+        :param test:
+        :return:
+        """
+        # 通用参数
         if self.settings.size:
             command.append(f"--size={self.settings.size}")
-
         if self.settings.runtime and not self.settings.entire_device:
             command.append(f"--runtime={self.settings.runtime}")
-
         if self.settings.time_based:
             command.append("--time_based")
+        command.append(f"ioengine={self.settings.ioengine}")
+        command.append(f"direct={self.settings.direct}")
+        if self.settings.group_reporting:
+            command.append("--group_reporting")
+
+        # 测试轮巡 指定参数
+        for k, v in test.items():
+            if k == "target":
+                continue
+            command.append(f"--{k}={v}")
 
         if self.settings.rwmixread and test["rw"] in self.settings.mixed:
             command.append(f"--rwmixread={test['rwmixread']}")
@@ -286,7 +309,9 @@ class FIORunner(object):
         :param test: 待执行项参数
         :return:
         """
-
+        logger.log("STAGE", f"执行FIO测试：{test}")
+        if self.settings.drop_caches:
+            self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
         output_file = f"{output_directory}/{test['rw']}-{test['iodepth']}-{test['numjobs']}.json"
 
@@ -297,16 +322,15 @@ class FIORunner(object):
         ]
         if self.settings.template:
             command.append(self.settings.template)
-        logger.error(test)
-        logger.warning(output_directory)
-        command = self.expand_command_line(command, test)
 
         target_parameter = self.check_target_type(test["target"], self.settings.type)
         if target_parameter:
             command.append(f"{target_parameter}={test['target']}")
 
+        command = self.expand_command_line(command, test)
+
         if self.settings.dry_run:
-            logger.warning(command)
+            logger.log("DESC", " ".join(command))
             return
 
         self.make_directory(output_directory)
@@ -319,19 +343,17 @@ class FIORunner(object):
         """
         # 检查环境
         # self.is_fio_installed()
-        # self.check_encoding()
+        self.check_encoding()
 
         self.generate_test_list()
-        display.display_header(self.settings)
+        # display.display_header(self.settings)
         tests = self.settings.tests
 
         if self.settings.quiet:
             for test in tests:
-                self.drop_caches()
                 self.run_test(test)
         else:
             for test in progress_bar(tests):
-                self.drop_caches()
                 self.run_test(test)
 
     def generate_report(self):

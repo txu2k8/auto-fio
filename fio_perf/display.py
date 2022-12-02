@@ -9,7 +9,7 @@
 """
 import datetime
 
-from fio_perf.models import FIOSettings
+from fio_perf.models import FIOSettings, DESCRIPTIONS
 
 
 def parse_settings_for_display(settings):
@@ -45,7 +45,7 @@ def display_header(settings: FIOSettings):
     length = data["length"]
     width = length + fl - len(header)
     duration = calculate_duration(settings)
-    print(f"{blockchar}" * (fl + width))
+    # print(f"{blockchar}" * (fl + width))
     print((" " * int(width / 2)) + header)
     print()
     if settings.dry_run:
@@ -57,14 +57,14 @@ def display_header(settings: FIOSettings):
 
     for item in dict_settings.keys():
         if item not in settings.filter_items:
-            description = settings.descriptions[item]
+            description = DESCRIPTIONS[item]
             if item in data.keys():
                 print(f"{description:<{fl}}: {data[item]:<}")
             else:
                 if dict_settings[item]:
                     print(f"{description}:<{fl}: {dict_settings[item]:<}")
     print()
-    print(f"{blockchar}" * (fl + width))
+    # print(f"{blockchar}" * (fl + width))
 
 
 if __name__ == '__main__':

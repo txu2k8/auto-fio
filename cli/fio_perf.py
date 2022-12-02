@@ -16,7 +16,8 @@ import typer
 
 from cli.log import init_logger
 from cli.main import app
-from fio_perf.models import RWTypeEnum
+from config import LOG_DIR
+from fio_perf.models import DESCRIPTIONS, RWTypeEnum
 from fio_perf.runner import FIORunner
 
 
@@ -53,12 +54,14 @@ def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str
 
 @app.command(help='FIO perf - 1：读性能测试')
 def perf_read(
-        template: str = typer.Option('/a.ini', help="FIO测试配置文件路径"),
+        template: str = typer.Option('', help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）"),
         target: List[str] = typer.Option(['D:\\minio\\'], help="FIO测试目标路径【列表】"),
         rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),
         iodepth: List[int] = typer.Option([1, 2], help="队列深度【列表】"),
         numjobs: List[int] = typer.Option([1, 16], help="并发数【列表】"),
-        bs: List[Text] = typer.Option(['128MB'], help="文件SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
+        bs: List[Text] = typer.Option(['4K'], help="Block Size，格式：1M，支持单位(B/K/M)"),
+        size: Text = typer.Option('100M', help="单个文件大小，格式：1M，支持单位(B/K/M/G)"),
+        output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
 
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         trace: bool = typer.Option(False, help="print TRACE level log"),
@@ -75,7 +78,10 @@ def perf_read(
         "bs": bs,
         "clean": clean,
     })
-    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, clean=clean)
+    runner = FIORunner(
+        target, template, rw, iodepth, numjobs, bs, output,
+        size=size, clean=clean
+    )
     runner.run()
 
 
@@ -87,6 +93,7 @@ def perf_write(
         iodepth: List[int] = typer.Option([1], help="队列深度【列表】"),
         numjobs: List[int] = typer.Option([1], help="并发数【列表】"),
         bs: str = typer.Option('4K', help="对象SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
+        output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
 
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         trace: bool = typer.Option(False, help="print TRACE level log"),
@@ -103,7 +110,7 @@ def perf_write(
         "bs": bs,
         "clean": clean,
     })
-    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, clean=clean)
+    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, output, clean=clean)
     runner.run()
 
 
