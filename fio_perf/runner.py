@@ -119,20 +119,6 @@ class FIORunner(object):
             logger.error(f"Failed to create {directory}")
             sys.exit(1)
 
-    def generate_output_directory(self, test):
-        if test["rw"] in self.settings.mixed:
-            directory = (
-                f"{self.settings.output}/{os.path.basename(test['target'])}/"
-                f"{test['rw']}{test['rwmixread']}/{test['bs']}"
-            )
-        else:
-            directory = f"{self.settings.output}/{os.path.basename(test['target'])}/{test['bs']}"
-
-        if "run" in test.keys():
-            directory = directory + f"/run-{test['run']}"
-
-        return directory
-
     @staticmethod
     def check_encoding():
         try:
@@ -173,6 +159,42 @@ class FIORunner(object):
             else:
                 self.settings.filter_items.append("rwmixread")
 
+    def check_target_type(self, target, filetype):
+        """
+        Validate path and file / directory type.
+        It also returns the appropritate fio command line parameter based on the
+        file type.
+        :param target:
+        :param filetype:
+        :return:
+        """
+
+        keys = ["file", "device", "directory", "rbd"]
+        test = {keys[0]: Path.is_file, keys[1]: Path.is_block_device, keys[2]: Path.is_dir}
+        parameter = {keys[0]: "--filename", keys[1]: "--filename", keys[2]: "--directory"}
+
+        if not filetype == "rbd":
+
+            if not os.path.exists(target):
+                logger.error(f"Benchmark target {filetype} {target} does not exist.")
+                sys.exit(10)
+
+            if filetype not in keys:
+                logger.error(f"Error, filetype {filetype} is an unknown option.")
+                sys.exit(123)
+
+            check = test[filetype]
+
+            path_target = Path(target)  # path library needs to operate on path object
+
+            if check(path_target):
+                return parameter[filetype]
+            else:
+                logger.error(f"Target {filetype} {target} is not {filetype}.")
+                sys.exit(10)
+        else:
+            return None
+
     def gather_settings(self):
         """
         聚合默认配置和用户自定义配置
@@ -182,6 +204,20 @@ class FIORunner(object):
         self.settings = {**self.settings, **custom_settings}
         self.check_settings()
         return
+
+    def generate_output_directory(self, test):
+        if test["rw"] in self.settings.mixed:
+            directory = (
+                f"{self.settings.output}/{os.path.basename(test['target'])}/"
+                f"{test['rw']}{test['rwmixread']}/{test['bs']}"
+            )
+        else:
+            directory = f"{self.settings.output}/{os.path.basename(test['target'])}/{test['bs']}"
+
+        if "run" in test.keys():
+            directory = directory + f"/run-{test['run']}"
+
+        return directory
 
     def generate_test_list(self):
         """
@@ -198,40 +234,6 @@ class FIORunner(object):
 
         result = [dict(zip(loop_items, item)) for item in benchmark_list]
         self.settings.tests = result
-
-    def check_target_type(self, target, filetype):
-        """Validate path and file / directory type.
-        It also returns the appropritate fio command line parameter based on the
-        file type.
-        """
-
-        keys = ["file", "device", "directory", "rbd"]
-
-        test = {keys[0]: Path.is_file, keys[1]: Path.is_block_device, keys[2]: Path.is_dir}
-
-        parameter = {keys[0]: "--filename", keys[1]: "--filename", keys[2]: "--directory"}
-
-        if not filetype == "rbd":
-
-            if not os.path.exists(target):
-                print(f"Benchmark target {filetype} {target} does not exist.")
-                sys.exit(10)
-
-            if filetype not in keys:
-                print(f"Error, filetype {filetype} is an unknown option.")
-                exit(123)
-
-            check = test[filetype]
-
-            path_target = Path(target)  # path library needs to operate on path object
-
-            if check(path_target):
-                return parameter[filetype]
-            else:
-                print(f"Target {filetype} {target} is not {filetype}.")
-                sys.exit(10)
-        else:
-            return None
 
     @staticmethod
     def _args2cmd(fio: FIOKwargs):
@@ -277,22 +279,6 @@ class FIORunner(object):
                 command.append(f"--ss_ramp={self.settings.ss_ramp}")
 
         return command
-
-    def get_result(self, output):
-        """
-        根据fio执行输出，分析获取测试结果
-        :param output:
-        :return:
-        """
-        pass
-
-    def report_csv(self, result):
-        """
-        根据解析到的测试结果，输出csv结果文件
-        :param result:
-        :return:
-        """
-        pass
 
     def run_test(self, test):
         """
