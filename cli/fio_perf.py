@@ -17,12 +17,12 @@ import typer
 from cli.log import init_logger
 from cli.main import app
 from config import LOG_DIR
-from fio_perf.models import DESCRIPTIONS, RWTypeEnum
+from fio_perf.models import RWTypeEnum
 from fio_perf.runner import FIORunner
 
 
 def init_print(case_id, desc, **kwargs):
-    logger.log('DESC', '{0}基本信息{0}'.format('*' * 20))
+    logger.log('DESC', '{0}输入信息{0}'.format('*' * 20))
     logger.log('DESC', "测试用例: {}".format(case_id))
     logger.log('DESC', '测试描述：{}'.format(desc))
     command = 'python3 ' + ' '.join(sys.argv)
@@ -32,7 +32,7 @@ def init_print(case_id, desc, **kwargs):
         if k == "rw":
             v = [x.value for x in v]
         logger.log('DESC', '{}：{}'.format(k, v))
-    logger.log('DESC', '*' * 48)
+    # logger.log('DESC', '*' * 48)
 
 
 def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str):

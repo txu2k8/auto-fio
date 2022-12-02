@@ -6,6 +6,7 @@ cryptography==38.0.3
 Jinja2==3.1.2
 loguru==0.6.0
 MarkupSafe==2.1.1
+numpy==1.23.5
 paramiko==2.11.1
 progressbar==2.5
 pycparser==2.21
@@ -17,5 +18,3 @@ six==1.16.0
 typer==0.6.1
 typing_extensions==4.3.0
 win32-setctime==1.1.0
-
-numpy~=1.23.5

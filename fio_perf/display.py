@@ -8,6 +8,7 @@
 @description: 
 """
 import datetime
+from loguru import logger
 
 from fio_perf.models import FIOSettings, DESCRIPTIONS
 
@@ -37,34 +38,25 @@ def calculate_duration(settings: FIOSettings):
 
 
 def display_header(settings: FIOSettings):
+    logger.log('DESC', '{0}参数信息{0}'.format('*' * 20))
     dict_settings = dict(settings)
-    header = "+++ Fio Benchmark Script +++"
-    blockchar = "\u2588"
     data = parse_settings_for_display(dict_settings)
     fl = 30  # Width of left column of text
-    length = data["length"]
-    width = length + fl - len(header)
     duration = calculate_duration(settings)
-    # print(f"{blockchar}" * (fl + width))
-    print((" " * int(width / 2)) + header)
-    print()
     if settings.dry_run:
-        print()
-        print(" ====---> WARNING - DRY RUN <---==== ")
-        print()
+        logger.warning(" ====---> WARNING - DRY RUN <---==== ")
     estimated = "Estimated duration"
-    print(f"{estimated:<{fl}}: {duration:<}")
+    logger.log('DESC', f"{estimated:<{fl}}: {duration:<}")
 
     for item in dict_settings.keys():
         if item not in settings.filter_items:
             description = DESCRIPTIONS[item]
             if item in data.keys():
-                print(f"{description:<{fl}}: {data[item]:<}")
+                logger.log('DESC', f"{description:<{fl}}: {data[item]:<}")
             else:
                 if dict_settings[item]:
-                    print(f"{description}:<{fl}: {dict_settings[item]:<}")
-    print()
-    # print(f"{blockchar}" * (fl + width))
+                    logger.log('DESC', f"{description}:<{fl}: {dict_settings[item]:<}")
+    logger.log('DESC', '*' * 48)
 
 
 if __name__ == '__main__':

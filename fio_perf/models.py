@@ -93,7 +93,8 @@ class FIOSettings(BaseModel):
     ]
     filter_items: List = [
         "filter_items",
-        "descriptions",
+        "drop_caches",
+        "tests",
         "loop_items",
         "dry_run",
         "mixed",

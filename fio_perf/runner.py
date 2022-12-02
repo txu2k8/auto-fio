@@ -18,7 +18,7 @@ from loguru import logger
 from numpy import linspace
 
 from fio_perf import display
-from fio_perf.models import FIOSettings, FIOKwargs, RWTypeEnum
+from fio_perf.models import FIOSettings, FIOKwargs
 
 
 def progress_bar(iter_obj):
@@ -343,10 +343,10 @@ class FIORunner(object):
         """
         # 检查环境
         # self.is_fio_installed()
-        self.check_encoding()
+        # self.check_encoding()
+        display.display_header(self.settings)
 
         self.generate_test_list()
-        # display.display_header(self.settings)
         tests = self.settings.tests
 
         if self.settings.quiet:
