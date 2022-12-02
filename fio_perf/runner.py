@@ -58,7 +58,7 @@ def progress_bar(iter_obj):
         sys.stdout.flush()
         yield item
     bar_str = "%4d%% |%s|" % (100, "\u2588" * 25)
-    time_str = "   [%s, 0:00:00]\n" % (sec_to_str(time.time() - start_t))
+    time_str = "   [%s, 0:00:00]\n\n" % (sec_to_str(time.time() - start_t))
     sys.stdout.write("\r" + bar_str + time_str)
     sys.stdout.flush()
 
