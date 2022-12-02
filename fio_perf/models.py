@@ -81,7 +81,7 @@ class FIOSettings(BaseModel):
     drop_caches: bool = True
     type: Text = "directory"
     dry_run: bool = False
-    quiet: bool = True
+    quiet: bool = False
     output: Text = "./"
     loops: int = 1
     # 定义常量

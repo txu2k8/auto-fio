@@ -80,12 +80,14 @@ class FIORunner(object):
             rwmixread=rwmixread,
             size=kwargs["size"],
             output=os.path.abspath(kwargs["output"]),
+            dry_run=kwargs["dry_run"],
+            quiet=kwargs["quiet"],
         )
         # print(self.settings)
 
     @staticmethod
     def _exec(cmd):
-        logger.log("RUN",  " ".join(cmd))
+        logger.log("RUN",  cmd)
         rc, output = subprocess.getstatusoutput(cmd)
         logger.debug(output.strip('\n'))
         return rc, output
@@ -334,7 +336,7 @@ class FIORunner(object):
             command.append(f"{target_parameter}={test['target']}")
 
         command = self.expand_command_line(command, test)
-        command_str = " ".join(command)
+        command_str = str(" ".join(command))
 
         if self.settings.dry_run:
             logger.log("DESC", command_str)

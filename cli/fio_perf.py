@@ -66,6 +66,8 @@ def perf(
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
 
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
+        dry_run: bool = typer.Option(False, help="不执行fio参数，仅打印执行流程"),
+        quiet: bool = typer.Option(False, help="打印执行进度"),
         trace: bool = typer.Option(False, help="print TRACE level log"),
         case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
         desc: str = typer.Option('', help="测试描述"),
@@ -82,7 +84,7 @@ def perf(
     })
     runner = FIORunner(
         target, template, rw, iodepth, numjobs, bs, rwmixread,
-        size=size, output=output, clean=clean
+        size=size, output=output, clean=clean, dry_run=dry_run, quiet=quiet
     )
     runner.run()
 
