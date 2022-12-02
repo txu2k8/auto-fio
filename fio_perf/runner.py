@@ -334,13 +334,14 @@ class FIORunner(object):
             command.append(f"{target_parameter}={test['target']}")
 
         command = self.expand_command_line(command, test)
+        command_str = " ".join(command)
 
         if self.settings.dry_run:
-            logger.log("DESC", " ".join(command))
+            logger.log("DESC", command_str)
             return
 
         self.make_directory(output_directory)
-        rc, output = self._exec(command)
+        rc, output = self._exec(command_str)
         logger.info(output)
         return
 
