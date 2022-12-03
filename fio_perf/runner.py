@@ -72,7 +72,7 @@ class FIORunner(object):
 
         self.settings = FIOSettings(
             target=target,
-            template=template,
+            template=str(template),
             rw=rw,
             iodepth=iodepth,
             numjobs=numjobs,
@@ -83,7 +83,7 @@ class FIORunner(object):
             dry_run=kwargs["dry_run"],
             quiet=kwargs["quiet"],
         )
-        # print(self.settings)
+        print(rwmixread)
 
     @staticmethod
     def _exec(cmd):
@@ -356,9 +356,8 @@ class FIORunner(object):
         # self.is_fio_installed()
         # self.check_encoding()
         self.gather_settings()
-        display.display_header(self.settings)
-
         self.generate_test_list()
+        display.display_header(self.settings)
         tests = self.settings.tests
 
         if self.settings.quiet:
@@ -369,7 +368,8 @@ class FIORunner(object):
                 self.run_test(test)
 
     def generate_report(self):
-        logger.info("分析结果数据、生成测试报告...")
+        logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
+        logger.log("STAGE", "分析结果数据、生成测试报告...")
 
 
 if __name__ == '__main__':

@@ -8,8 +8,7 @@
 @description: CosBench性能测试 ...
 """
 import sys
-import re
-from typing import List, Text
+from typing import List, Optional, Text, Union
 from datetime import datetime
 from loguru import logger
 import typer
@@ -35,36 +34,38 @@ def init_print(case_id, desc, **kwargs):
     # logger.log('DESC', '*' * 48)
 
 
-def duration_callback(ctx: typer.Context, param: typer.CallbackParam, value: str):
-    second = 0
-    if ctx.resilient_parsing:
-        return
-    if not value:
-        return second
+def int_split_callback(value: str):
+    ret_value = []
+    if isinstance(value, list):
+        for v in value:
+            ret_value.extend([int(x) for x in v.strip().split(",")])
     else:
-        try:
-            dhms = re.findall(r'-?[0-9]\d*', value)
-            d, h, m, s = dhms
-            second = int(d) * 86400 + int(h) * 3600 + int(m) * 60 + int(s)
-        except Exception as e:
-            raise typer.BadParameter("duration参数格式错误，必需以h、m、s组合，如1h3m10s")
+        ret_value = [int(x) for x in value.strip().split(",")]
+    return ret_value
 
-    return second
+
+def str_split_callback(value: str):
+    ret_value = []
+    if isinstance(value, list):
+        for v in value:
+            ret_value.extend(v.strip().split(","))
+    else:
+        ret_value = value.strip().split(",")
+    return ret_value
 
 
 @app.command(help='FIO性能测试')
 def perf(
-        template: str = typer.Option('', help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）"),
-        target: List[str] = typer.Option(['D:\\minio\\'], help="FIO测试目标路径【列表】"),
-        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randrw], help="测试类型【列表】"),
-        iodepth: List[int] = typer.Option([1, 2], help="队列深度【列表】"),
-        numjobs: List[int] = typer.Option([1, 16], help="并发数【列表】"),
-        bs: List[Text] = typer.Option(['4K'], help="Block Size，格式：1M，支持单位(B/K/M)"),
-        rwmixread: List[int] = typer.Option([], help="混合读写->读占比（百分比）"),
+        template: Text = typer.Option('', exists=True, resolve_path=True, help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）TODO"),
+        target: List[Text] = typer.Option(..., callback=str_split_callback, help="【列表，逗号分隔】FIO测试目标路径"),
+        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randrw], help="【列表】测试类型"),
+        iodepth: List[Text] = typer.Option([1, 2], callback=int_split_callback, help="【列表，逗号分隔】队列深度"),
+        numjobs: List[Text] = typer.Option([1, 16], callback=int_split_callback, help="【列表，逗号分隔】并发数"),
+        blocksize: List[Text] = typer.Option(['4K'], callback=str_split_callback, help="【列表，逗号分隔】块大小，例：4K，单位(B/K/M)"),
+        rwmixread: List[Text] = typer.Option([], callback=int_split_callback, help="【列表，逗号分隔】混合读写->读占比（百分比）"),
 
-        size: Text = typer.Option('100M', help="单个文件大小，格式：1M，支持单位(B/K/M/G)"),
+        size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
-
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         dry_run: bool = typer.Option(False, help="不执行fio参数，仅打印执行流程"),
         quiet: bool = typer.Option(False, help="打印执行进度"),
@@ -79,11 +80,11 @@ def perf(
         "rw": rw,
         "iodepth": iodepth,
         "numjobs": numjobs,
-        "bs": bs,
+        "bs": blocksize,
         "clean": clean,
     })
     runner = FIORunner(
-        target, template, rw, iodepth, numjobs, bs, rwmixread,
+        target, template, rw, iodepth, numjobs, blocksize, rwmixread,
         size=size, output=output, clean=clean, dry_run=dry_run, quiet=quiet
     )
     runner.run()

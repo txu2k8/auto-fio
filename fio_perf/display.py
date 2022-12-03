@@ -45,7 +45,9 @@ def display_header(settings: FIOSettings):
     duration = calculate_duration(settings)
     if settings.dry_run:
         logger.warning(" ====---> WARNING - DRY RUN <---==== ")
+    len_test = "TestCase Count"
     estimated = "Estimated duration"
+    logger.log('DESC', f"{len_test:<{fl}}: {len(settings.tests):<}")
     logger.log('DESC', f"{estimated:<{fl}}: {duration:<}")
 
     for item in dict_settings.keys():
@@ -56,7 +58,7 @@ def display_header(settings: FIOSettings):
             else:
                 if dict_settings[item]:
                     logger.log('DESC', f"{description}:<{fl}: {dict_settings[item]:<}")
-    logger.log('DESC', '*' * 48)
+    logger.log('DESC', '{0}开始执行{0}'.format('*' * 20))
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ from config import __version__
 
 def version_callback(value: bool):
     if value:
-        print(f"LTS Version: {__version__}")
+        print(f"FIO-TEST-AUTO Version: {__version__}")
         raise typer.Exit()
 
 
