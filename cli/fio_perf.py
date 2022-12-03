@@ -61,7 +61,7 @@ def perf(
         rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randrw], help="【列表】测试类型"),
         iodepth: List[Text] = typer.Option([1, 2], callback=int_split_callback, help="【列表，逗号分隔】队列深度"),
         numjobs: List[Text] = typer.Option([1, 16], callback=int_split_callback, help="【列表，逗号分隔】并发数"),
-        blocksize: List[Text] = typer.Option(['4K'], callback=str_split_callback, help="【列表，逗号分隔】块大小，例：4K，单位(B/K/M)"),
+        bs: List[Text] = typer.Option(['4K'], callback=str_split_callback, help="【列表，逗号分隔】块大小，例：4K，单位(B/K/M)"),
         rwmixread: List[Text] = typer.Option([], callback=int_split_callback, help="【列表，逗号分隔】混合读写->读占比（百分比）"),
 
         size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
@@ -80,11 +80,11 @@ def perf(
         "rw": rw,
         "iodepth": iodepth,
         "numjobs": numjobs,
-        "bs": blocksize,
+        "bs": bs,
         "clean": clean,
     })
     runner = FIORunner(
-        target, template, rw, iodepth, numjobs, blocksize, rwmixread,
+        target, template, rw, iodepth, numjobs, bs, rwmixread,
         size=size, output=output, clean=clean, dry_run=dry_run, quiet=quiet
     )
     runner.run()
