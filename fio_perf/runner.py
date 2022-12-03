@@ -79,11 +79,11 @@ class FIORunner(object):
             bs=bs,
             rwmixread=rwmixread,
             size=kwargs["size"],
+            runtime=kwargs["runtime"],
             output=os.path.abspath(kwargs["output"]),
             dry_run=kwargs["dry_run"],
             quiet=kwargs["quiet"],
         )
-        print(rwmixread)
 
     @staticmethod
     def _exec(cmd):
