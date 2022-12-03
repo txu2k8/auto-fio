@@ -65,6 +65,7 @@ def perf(
         rwmixread: List[Text] = typer.Option([], callback=int_split_callback, help="【列表，逗号分隔】混合读写->读占比（百分比）"),
 
         size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
+        runtime: int = typer.Option(60, help="执行时长"),
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         dry_run: bool = typer.Option(False, help="不执行fio参数，仅打印执行流程"),
@@ -81,11 +82,14 @@ def perf(
         "iodepth": iodepth,
         "numjobs": numjobs,
         "bs": bs,
+        "rwmixread": rwmixread,
+        "size": size,
+        "runtime": runtime,
         "clean": clean,
     })
     runner = FIORunner(
         target, template, rw, iodepth, numjobs, bs, rwmixread,
-        size=size, output=output, clean=clean, dry_run=dry_run, quiet=quiet
+        size=size, runtime=runtime, output=output, clean=clean, dry_run=dry_run, quiet=quiet
     )
     runner.run()
 
