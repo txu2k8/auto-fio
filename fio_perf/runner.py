@@ -213,7 +213,7 @@ class FIORunner(object):
         """
         logger.log("STAGE", "聚合FIO参数和配置文件内容参数...")
         custom_settings = {}
-        self.settings = loader.load_bench_settings({**dict(self.settings), **custom_settings})
+        self.settings = loader.load_fio_settings({**dict(self.settings), **custom_settings})
         self.check_settings()
 
     def generate_output_directory(self, test):

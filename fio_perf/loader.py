@@ -14,14 +14,14 @@ from fio_perf import exceptions
 from fio_perf.models import FIOSettings, Client, FIOResult
 
 
-def load_bench_settings(data: Dict) -> FIOSettings:
+def load_fio_settings(data: Dict) -> FIOSettings:
     """将 FIOResult 数据（字典）转成 FIOResult 对象"""
     try:
         # validate with pydantic Node model
         fio_s_obj = FIOSettings.parse_obj(data)
     except ValidationError as ex:
         err_msg = f"BenchSettings ValidationError:\nerror: {ex}\ncontent: {data}"
-        raise exceptions.BenchSettingsFormatError(err_msg)
+        raise exceptions.FIOSettingsFormatError(err_msg)
 
     return fio_s_obj
 

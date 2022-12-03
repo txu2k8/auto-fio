@@ -17,7 +17,7 @@ class FileFormatError(MyBaseError):
     pass
 
 
-class BenchSettingsFormatError(FileFormatError):
+class FIOSettingsFormatError(FileFormatError):
     pass
 
 
