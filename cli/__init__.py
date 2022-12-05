@@ -8,9 +8,10 @@
 @description: 
 """
 from cli import fio_perf
+from cli import fio_report
 
 __all__ = [
-    fio_perf
+    fio_perf, fio_report
 ]
 
 if __name__ == '__main__':

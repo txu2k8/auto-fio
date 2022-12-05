@@ -7,15 +7,16 @@
 @email:tao.xu2008@outlook.com
 @description:
 """
-from enum import Enum
 from typing import Text, List
 from pydantic import BaseModel
 
 
 class ReportSettings(BaseModel):
     """报告 配置信息 - 数据模型"""
-    type: List = []
+    rw: Text = ''
     filter: List = ["read", "write"]
+
+    type: List = []
     dpi: int = 200
     title_fontsize: int = 16
     subtitle_fontsize: int = 10
@@ -25,4 +26,4 @@ class ReportSettings(BaseModel):
     tablecolumn_spacing: int = 0.01
     colors: List = []
 
-    input_directory: Text = ""
+    input_directory: List[Text] = []
