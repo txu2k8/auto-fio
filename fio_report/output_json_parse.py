@@ -217,6 +217,7 @@ class FIOJsonParse(object):
                     "latency_us": self.get_nested_value(record, m["latency_us"]),
                     "latency_ns": self.get_nested_value(record, m["latency_ns"]),
                     "bw": self.get_nested_value(record, m["bw"]),
+                    "bw_mb": self.get_nested_value(record, m["bw"])/1024/1024,
                     "type": mode,
                     "cpu_sys": self.get_nested_value(record, m["cpu_sys"]),
                     "cpu_usr": self.get_nested_value(record, m["cpu_usr"]),

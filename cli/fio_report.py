@@ -17,7 +17,7 @@ from cli.log import init_logger
 from cli.main import app
 from config import LOG_DIR
 from fio_perf.models import RWTypeEnum
-from fio_report.runner import FIOReport
+from fio_report.runner import FIOReportRunner
 
 
 def init_print(**kwargs):
@@ -42,7 +42,7 @@ def report_csv(
         "input": data_path,
         "output": output,
     })
-    runner = FIOReport(
+    runner = FIOReportRunner(
         data_path=data_path, output=output
     )
     runner.run()
