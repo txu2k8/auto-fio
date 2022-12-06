@@ -9,8 +9,9 @@
 """
 import os
 from loguru import logger
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Series, Reference
+from openpyxl.utils import get_column_letter
 
 from fio_report.models import ExcelReportSettings
 
@@ -38,7 +39,7 @@ class ReportXlsx(object):
         """
         for idx, item in enumerate(items):
             if item == key:
-                return idx
+                return idx+1
         raise Exception("{}中没找到:{}".format(items, key))
 
     def write_data_sheet(self):
@@ -78,7 +79,7 @@ class ReportXlsx(object):
         cats = Reference(self.data_ws, min_row=2, max_row=self.row_count+1, min_col=1)
         chart.add_data(data, titles_from_data=True)
         chart.set_categories(cats)
-        chart.shape = 114
+        chart.shape = 4
         return chart
 
     def bar_chart_bw(self):
@@ -93,6 +94,7 @@ class ReportXlsx(object):
     def create_xlsx_file(self):
         # 创建数据统计表
         self.write_data_sheet()
+
         # 创建性能对比图
         self.chart_ws.add_chart(self.bar_chart_bw(), "A1")
         self.chart_ws.add_chart(self.bar_chart_iops(), "I1")
@@ -125,8 +127,6 @@ class ReportXlsx(object):
         # chart4.title = 'Percent Stacked Chart'
         #
         # self.chart_ws.add_chart(chart4, "G27")
-
-
 
 
 if __name__ == '__main__':
