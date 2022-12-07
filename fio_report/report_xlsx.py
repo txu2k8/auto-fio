@@ -9,9 +9,10 @@
 """
 import os
 from loguru import logger
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.label import DataLabelList
+from openpyxl.utils import get_column_letter
 
 from fio_report.models import ExcelReportSettings
 
@@ -24,7 +25,7 @@ class ReportXlsx(object):
         self.settings = ExcelReportSettings()
         self.row_count = 0
 
-        self.wb = Workbook(write_only=True)
+        self.wb = Workbook(write_only=False)
         self.data_ws = self.wb.create_sheet(self.settings.data_sheet_title, self.settings.data_sheet_index)
         self.data_ws.append(self.settings.data_column_title)
         self.chart_ws = self.wb.create_sheet(self.settings.chart_sheet_title, self.settings.chart_sheet_index)
@@ -42,6 +43,12 @@ class ReportXlsx(object):
                 return idx+1
         raise Exception("{}中没找到:{}".format(items, key))
 
+    def reset_col(self):
+        for idx, col in enumerate(self.data_ws.columns):
+            letter = get_column_letter(idx + 1)  # 列字母
+            collen = max([len(str(c.value).encode()) for c in col])  # 获取这一列长度的最大值
+            self.data_ws.column_dimensions[letter].width = collen * 1.2 + 4  # 也就是列宽为最大长度*1.2 可以自己调整
+
     def write_data_sheet(self):
         for bs_data in self.json_data:
             for data in bs_data['data']:
@@ -58,6 +65,11 @@ class ReportXlsx(object):
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1
+        self.data_ws.auto_filter.ref = f"A1:H{self.row_count+1}"
+        self.data_ws.auto_filter.add_filter_column(0, [])
+        self.data_ws.auto_filter.add_sort_condition(f"F2:F{self.row_count+1}")
+        self.data_ws.auto_filter.add_sort_condition(f"G2:G{self.row_count+1}")
+        self.data_ws.auto_filter.add_sort_condition(f"H2:H{self.row_count+1}")
 
     def bar_chart(self, key, x_title=None, y_title=None):
         """
@@ -101,6 +113,7 @@ class ReportXlsx(object):
     def create_xlsx_file(self):
         # 创建数据统计表
         self.write_data_sheet()
+        self.reset_col()
 
         # 创建性能对比图
         self.chart_ws.add_chart(self.bar_chart_bw(), "A1")

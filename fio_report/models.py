@@ -33,12 +33,12 @@ class ExcelReportSettings(BaseModel):
     """报告 配置信息 - 数据模型"""
     # 结果统计 - 数据表
     data_sheet_title: Text = "结果统计"
-    data_sheet_index: int = 1
+    data_sheet_index: int = 0
     data_column_title: Tuple = ('jobname', 'rw', 'iodepth', 'numjobs', 'bs', 'iops', 'bw', 'latency')
 
     # 对比分析 - 图表
     chart_sheet_title: Text = "对比分析"
-    chart_sheet_index: int = 2
+    chart_sheet_index: int = 1
     chart_type: Text = "col"
     chart_style: int = 10
     chart_title: Text = "FIO结果对比"
