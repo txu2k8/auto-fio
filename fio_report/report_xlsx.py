@@ -9,9 +9,9 @@
 """
 import os
 from loguru import logger
-from openpyxl import Workbook, load_workbook
-from openpyxl.chart import BarChart, Series, Reference
-from openpyxl.utils import get_column_letter
+from openpyxl import Workbook
+from openpyxl.chart import BarChart, Reference
+from openpyxl.chart.label import DataLabelList
 
 from fio_report.models import ExcelReportSettings
 
@@ -53,7 +53,7 @@ class ReportXlsx(object):
                     data['bs'],
                     data['iops'],
                     data['bw_mb'],
-                    data['lat'],
+                    data['lat_ms'],
                 )
                 logger.debug(row)
                 self.data_ws.append(row)
@@ -71,6 +71,8 @@ class ReportXlsx(object):
         chart.type = "bar"
         chart.style = 13
         chart.overlap = 100
+        chart.height = self.row_count
+        chart.legend = None  # 不显示图例
         chart.title = "FIO性能对比 - {}".format(key.upper())
         chart.y_axis.title = y_title or 'Test number'
         chart.x_axis.title = x_title or 'Test Job Name'
@@ -80,6 +82,11 @@ class ReportXlsx(object):
         chart.add_data(data, titles_from_data=True)
         chart.set_categories(cats)
         chart.shape = 4
+        # 显示数据标签
+        s1 = chart.series[0]
+        s1.dLbls = DataLabelList()
+        s1.dLbls.showVal = True
+
         return chart
 
     def bar_chart_bw(self):
@@ -89,7 +96,7 @@ class ReportXlsx(object):
         return self.bar_chart("iops")
 
     def bar_chart_lat(self):
-        return self.bar_chart("latency", y_title="Test number(ns)")
+        return self.bar_chart("latency", y_title="Test number(ms)")
 
     def create_xlsx_file(self):
         # 创建数据统计表
