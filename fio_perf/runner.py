@@ -310,13 +310,14 @@ class FIORunner(object):
 
         return command
 
-    def run_test(self, test):
+    def run_test(self, test, idx):
         """
         执行单项测试
         :param test: 待执行项参数
+        :param idx: 待执行项 序号
         :return:
         """
-        logger.log("STAGE", f"执行FIO测试：{test}")
+        logger.log("STAGE", f"执行FIO测试{idx+1}：{test}")
         if self.settings.drop_caches:
             self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
@@ -370,11 +371,11 @@ class FIORunner(object):
         tests = self.settings.tests
 
         if self.settings.quiet:
-            for test in tests:
-                self.run_test(test)
+            for idx, test in enumerate(tests):
+                self.run_test(test, idx)
         else:
-            for test in progress_bar(tests):
-                self.run_test(test)
+            for idx, test in enumerate(progress_bar(tests)):
+                self.run_test(test, idx)
 
         if not self.dry_run and self.report:
             self.generate_report()
