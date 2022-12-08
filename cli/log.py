@@ -35,7 +35,7 @@ TRACE_FORMAT = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <
                  "- <level>{message}</level>"
 
 
-def init_logger(prefix='test', case_id=0, trace=False):
+def init_logger(prefix='test1', case_id=0, trace=False):
     """
     初始化logger日志配置
     :param prefix:

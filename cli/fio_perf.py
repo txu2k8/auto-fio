@@ -8,7 +8,7 @@
 @description: CosBench性能测试 ...
 """
 import sys
-from typing import List, Optional, Text, Union
+from typing import List, Text
 from datetime import datetime
 from loguru import logger
 import typer
@@ -67,6 +67,7 @@ def perf(
         size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
         runtime: int = typer.Option(60, help="执行时长"),
         output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
+        report: bool = typer.Option(True, help="执行完成后生成统计报告"),
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         dry_run: bool = typer.Option(False, help="不执行fio参数，仅打印执行流程"),
         quiet: bool = typer.Option(False, help="打印执行进度"),
@@ -89,37 +90,8 @@ def perf(
     })
     runner = FIORunner(
         target, template, rw, iodepth, numjobs, bs, rwmixread,
-        size=size, runtime=runtime, output=output, clean=clean, dry_run=dry_run, quiet=quiet
+        size=size, runtime=runtime, output=output, report=report, clean=clean, dry_run=dry_run, quiet=quiet
     )
-    runner.run()
-
-
-@app.command(help='FIO perf - 1：写性能测试')
-def perf_write(
-        target: str = typer.Option('', help="FIO测试目标路径"),
-        template: str = typer.Option('', help="FIO测试配置文件路径"),
-        rw: List[RWTypeEnum] = typer.Option([RWTypeEnum.randwrite], help="测试类型【列表】"),
-        iodepth: List[int] = typer.Option([1], help="队列深度【列表】"),
-        numjobs: List[int] = typer.Option([1], help="并发数【列表】"),
-        bs: str = typer.Option('4K', help="对象SIZE，格式：1MB，支持单位(B/KB/MB/GB)"),
-        output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
-
-        clean: bool = typer.Option(False, help="执行完成后清理数据"),
-        trace: bool = typer.Option(False, help="print TRACE level log"),
-        case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
-        desc: str = typer.Option('', help="测试描述"),
-):
-    init_logger(prefix='cosbench', case_id=case_id, trace=trace)
-    init_print(case_id, desc, **{
-        "target": target,
-        "template": template,
-        "rw": rw,
-        "iodepth": iodepth,
-        "numjobs": numjobs,
-        "bs": bs,
-        "clean": clean,
-    })
-    runner = FIORunner(target, template, rw, iodepth, numjobs, bs, output, clean=clean)
     runner.run()
 
 

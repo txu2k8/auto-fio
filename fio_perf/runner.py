@@ -19,6 +19,7 @@ from numpy import linspace
 
 from fio_perf import display, loader
 from fio_perf.models import FIOSettings, FIOKwargs
+from fio_report.runner import FIOReportRunner
 
 
 def progress_bar(iter_obj):
@@ -69,6 +70,8 @@ class FIORunner(object):
     def __init__(self, target, template, rw, iodepth, numjobs, bs, rwmixread, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        self.output = os.path.abspath(kwargs["output"])
+        self.report = kwargs["report"]
 
         self.settings = FIOSettings(
             target=target,
@@ -80,7 +83,7 @@ class FIORunner(object):
             rwmixread=rwmixread,
             size=kwargs["size"],
             runtime=kwargs["runtime"],
-            output=os.path.abspath(kwargs["output"]),
+            output=self.output,
             dry_run=kwargs["dry_run"],
             quiet=kwargs["quiet"],
         )
@@ -347,6 +350,11 @@ class FIORunner(object):
         logger.info(output)
         return
 
+    def generate_report(self):
+        logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
+        logger.log("STAGE", "分析结果数据、生成测试报告...")
+        FIOReportRunner(data_path=self.output, output=self.output).run()
+
     def run(self):
         """
         执行测试，入口
@@ -367,9 +375,8 @@ class FIORunner(object):
             for test in progress_bar(tests):
                 self.run_test(test)
 
-    def generate_report(self):
-        logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
-        logger.log("STAGE", "分析结果数据、生成测试报告...")
+        if self.report:
+            self.generate_report()
 
 
 if __name__ == '__main__':
