@@ -34,7 +34,11 @@ class ExcelReportSettings(BaseModel):
     # 结果统计 - 数据表
     data_sheet_title: Text = "结果统计"
     data_sheet_index: int = 0
-    data_column_title: Tuple = ('jobname', 'rw', 'iodepth', 'numjobs', 'bs', 'iops', 'bw', 'latency')
+    data_column_title: Tuple = (
+        'jobname', 'rw', 'iodepth', 'numjobs', 'bs',
+        'bw-write', 'iops-write', 'latency-write',
+        'bw-read', 'iops-read', 'latency-read'
+    )
 
     # 对比分析 - 图表
     chart_sheet_title: Text = "对比分析"

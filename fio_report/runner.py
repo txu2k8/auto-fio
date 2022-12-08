@@ -21,11 +21,8 @@ class FIOReportRunner(object):
 
     def run(self):
         json_data = FIOJsonParse(self.data_path).get_json_data()
-        with open("./sss.json", "w+") as f:
-            f.write(json.dumps(json_data, indent=2))
-        # for bs_data in json_data:
-        #     for data in bs_data['data']:
-        #         logger.info(f"{data['jobname']}, {data['rw']}, bs={data['bs']}, iops={data['iops']}")
+        # with open("./sss.json", "w+") as f:
+        #     f.write(json.dumps(json_data, indent=2))
         ReportXlsx("./", json_data).create_xlsx_file()
 
 

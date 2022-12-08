@@ -52,20 +52,31 @@ class ReportXlsx(object):
     def write_data_sheet(self):
         for bs_data in self.json_data:
             for data in bs_data['data']:
-                row = (
+                row = [
+                    # 测试 重要参数
                     data['jobname'],
                     data['rw'],
                     data['iodepth'],
                     data['numjobs'],
                     data['bs'],
-                    data['iops'],
-                    data['bw_mb'],
-                    data['lat_ms'],
-                )
+                    # 写 结果
+                    0,
+                    0,
+                    0,
+                    # 读 结果
+                    0,
+                    0,
+                    0,
+                ]
+                for result in data["result"]:
+                    idx_start = 5 if result["type"] == "write" else 8
+                    row[idx_start+0] = result['bw_mb']
+                    row[idx_start+1] = result['iops']
+                    row[idx_start+2] = result['lat_ms']
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1
-        self.data_ws.auto_filter.ref = f"A1:H{self.row_count+1}"
+        self.data_ws.auto_filter.ref = f"A1:K{self.row_count+1}"
         self.data_ws.auto_filter.add_filter_column(0, [])
         self.data_ws.auto_filter.add_sort_condition(f"F2:F{self.row_count+1}")
         self.data_ws.auto_filter.add_sort_condition(f"G2:G{self.row_count+1}")
@@ -82,33 +93,35 @@ class ReportXlsx(object):
         chart = BarChart()
         chart.type = "bar"
         chart.style = 13
-        chart.overlap = 100
-        chart.height = self.row_count
-        chart.legend = None  # 不显示图例
-        chart.title = "FIO性能对比 - {}".format(key.upper())
+        # chart.overlap = 100
+        chart.height = self.row_count*1.3
+        chart.legend.position = "b"  # 下方 显示图例
+        chart.title = "FIO性能对比 - {}".format(key.split("-")[0].upper())
         chart.y_axis.title = y_title or 'Test number'
         chart.x_axis.title = x_title or 'Test Job Name'
         col_index = self.get_item_index(self.settings.data_column_title, key)
-        data = Reference(self.data_ws, min_row=2, max_row=self.row_count+1, min_col=col_index, max_col=col_index)
+        data1 = Reference(self.data_ws, min_row=1, max_row=self.row_count+1, min_col=col_index, max_col=col_index)
+        data2 = Reference(self.data_ws, min_row=1, max_row=self.row_count+1, min_col=col_index+3, max_col=col_index+3)
         cats = Reference(self.data_ws, min_row=2, max_row=self.row_count+1, min_col=1)
-        chart.add_data(data, titles_from_data=True)
+        chart.add_data(data1, titles_from_data=True)
+        chart.add_data(data2, titles_from_data=True)
         chart.set_categories(cats)
         chart.shape = 4
         # 显示数据标签
-        s1 = chart.series[0]
-        s1.dLbls = DataLabelList()
-        s1.dLbls.showVal = True
+        for s in chart.series:
+            s.dLbls = DataLabelList()
+            s.dLbls.showVal = True
 
         return chart
 
     def bar_chart_bw(self):
-        return self.bar_chart("bw", y_title="Test number(MiB)")
+        return self.bar_chart("bw-write", y_title="Test number(MiB)")
 
     def bar_chart_iops(self):
-        return self.bar_chart("iops")
+        return self.bar_chart("iops-write")
 
     def bar_chart_lat(self):
-        return self.bar_chart("latency", y_title="Test number(ms)")
+        return self.bar_chart("latency-write", y_title="Test number(ms)")
 
     def create_xlsx_file(self):
         # 创建数据统计表

@@ -72,6 +72,7 @@ class FIOJsonParse(object):
                 input_directories.append(input_dir_struct)
 
         # 筛选JSON文件，并排序
+        dataset = []
         for directory in input_directories:
             file_list = []
             for file in directory["files"]:
@@ -83,9 +84,10 @@ class FIOJsonParse(object):
             absolute_dir = os.path.abspath(str(directory))
             if not directory["files"]:
                 logger.warning(f"\n没有找到匹配的JSON文件：{str(absolute_dir)}\n")
-                input_directories.remove(directory)
+                continue
+            dataset.append(directory)
 
-        return input_directories
+        return dataset
 
     def import_json_dataset(self, dataset):
         """
@@ -197,35 +199,43 @@ class FIOJsonParse(object):
             item["data"] = []
             for record in item["rawdata"]:
                 options = self.validate_job_options(dataset)
+                self.settings.rw = self.get_nested_value(record, options + ["rw"])
                 if self.settings.rw in ["rw", "readwrite", "randrw"]:
-                    mode = self.settings.filter[0]
+                    modes = self.settings.filter
                 elif self.settings.rw in ["read", "write"]:
-                    mode = self.settings.rw
+                    modes = [self.settings.rw]
                 else:
-                    mode = self.get_nested_value(record, options + ["rw"])[4:]
-                m = self.get_json_mapping(mode, dataset)
-                row = {
+                    modes = [self.get_nested_value(record, options + ["rw"])[4:]]
+
+                m = self.get_json_mapping(self.settings.rw, dataset)
+                row_dict = {
+                    "jobname": self.get_nested_value(record, m["jobname"]),
                     "iodepth": int(self.get_nested_value(record, m["iodepth"])),
                     "numjobs": int(self.get_nested_value(record, m["numjobs"])),
                     "bs": self.get_nested_value(record, m["bs"]),
                     "rw": self.get_nested_value(record, m["rw"]),
-                    "iops": round(self.get_nested_value(record, m["iops"]), 0),
-                    "iops_stddev": self.get_nested_value(record, m["iops_stddev"]),
-                    "lat": self.get_nested_value(record, m["lat_ns"]),
-                    "lat_ms": round(self.get_nested_value(record, m["lat_ns"])/1000/1000, 2),
-                    "lat_stddev": self.get_nested_value(record, m["lat_stddev"]),
                     "latency_ms": self.get_nested_value(record, m["latency_ms"]),
                     "latency_us": self.get_nested_value(record, m["latency_us"]),
                     "latency_ns": self.get_nested_value(record, m["latency_ns"]),
-                    "bw": self.get_nested_value(record, m["bw"]),
-                    "bw_mb": round(self.get_nested_value(record, m["bw"])/1024/1024, 2),
-                    "type": mode,
                     "cpu_sys": self.get_nested_value(record, m["cpu_sys"]),
                     "cpu_usr": self.get_nested_value(record, m["cpu_usr"]),
-                    "jobname": self.get_nested_value(record, m["jobname"]),
                     "fio_version": self.get_nested_value(record, m["fio_version"]),
+                    "result": []
                 }
-                item["data"].append(row)
+                for mode in modes:
+                    m = self.get_json_mapping(mode, dataset)
+                    row = {
+                        "type": mode,
+                        "iops": round(self.get_nested_value(record, m["iops"]), 0),
+                        "iops_stddev": self.get_nested_value(record, m["iops_stddev"]),
+                        "lat": self.get_nested_value(record, m["lat_ns"]),
+                        "lat_ms": round(self.get_nested_value(record, m["lat_ns"])/1000/1000, 2),
+                        "lat_stddev": self.get_nested_value(record, m["lat_stddev"]),
+                        "bw": self.get_nested_value(record, m["bw"]),
+                        "bw_mb": round(self.get_nested_value(record, m["bw"])/1024/1024, 2),
+                    }
+                    row_dict["result"].append(row)
+                item["data"].append(row_dict)
         return dataset
 
     def get_json_data(self):
