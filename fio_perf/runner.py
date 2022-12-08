@@ -72,6 +72,7 @@ class FIORunner(object):
         self.kwargs = kwargs
         self.output = os.path.abspath(kwargs["output"])
         self.report = kwargs["report"]
+        self.dry_run = kwargs["dry_run"]
 
         self.settings = FIOSettings(
             target=target,
@@ -375,7 +376,7 @@ class FIORunner(object):
             for test in progress_bar(tests):
                 self.run_test(test)
 
-        if self.report:
+        if not self.dry_run and self.report:
             self.generate_report()
 
 
