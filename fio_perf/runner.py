@@ -355,7 +355,7 @@ class FIORunner(object):
     def generate_report(self):
         logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
         logger.log("STAGE", "分析结果数据、生成测试报告...")
-        FIOReportRunner(data_path=self.output, output=self.output).run()
+        FIOReportRunner(data_path=[self.output], output=self.output).run()
 
     def run(self):
         """
