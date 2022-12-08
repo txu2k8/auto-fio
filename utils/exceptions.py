@@ -119,7 +119,7 @@ class TestCaseNotFound(NotFoundError):
 
 
 class SummaryEmpty(MyBaseError):
-    """test1 result summary data is empty"""
+    """simple1 result summary data is empty"""
 
 
 if __name__ == '__main__':
