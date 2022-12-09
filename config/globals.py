@@ -17,7 +17,9 @@ from config.cf_ini import ConfigIni, DefaultOption
 
 
 # 时间字符串
-TIME_STR = datetime.now().strftime("%Y%m%d_%H%M%S")  # 时间字符串 -%f
+dt = datetime.now()
+DT_STR = dt.strftime("%Y-%m-%d %H:%M:%S")
+TIME_STR = dt.strftime("%Y%m%d_%H%M%S")  # 时间字符串 -%f
 
 # 项目BASE目录
 BASE_DIR = Path(__file__).resolve().parent.parent if __file__.endswith('py') else os.getcwd()

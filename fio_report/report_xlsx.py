@@ -36,6 +36,7 @@ class ReportXlsx(object):
         self.chart_ws = self.wb.create_sheet(self.settings.chart_sheet_title, self.settings.chart_sheet_index)
         self.desc_ws = self.wb.create_sheet(self.settings.desc_sheet_title, self.settings.desc_sheet_index)
         self.desc_ws.append(self.settings.desc_column_title)
+        self.env_ws = self.wb.create_sheet(self.settings.env_sheet_title, self.settings.env_sheet_index)
 
     @staticmethod
     def get_item_index(items, key):

@@ -17,6 +17,7 @@ import subprocess
 from loguru import logger
 from numpy import linspace
 
+from config import DT_STR
 from fio_perf import display, loader
 from fio_perf.models import FIOSettings, FIOKwargs
 from fio_report.runner import FIOReportRunner
@@ -358,6 +359,7 @@ class FIORunner(object):
         logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
         logger.log("STAGE", "分析结果数据、生成测试报告...")
         comments = {
+            "测试时间": DT_STR,
             "测试命令": ' '.join(sys.argv),
             "测试描述": self.desc,
             "测试用例": self.case_id

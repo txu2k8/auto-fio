@@ -15,7 +15,7 @@ from fio_report.report_xlsx import ReportXlsx
 
 class FIOReportRunner(object):
     """FIO测试结果收集，报告生成"""
-    def __init__(self, data_path, output, comments, *args, **kwargs):
+    def __init__(self, data_path, output, comments=None, *args, **kwargs):
         self.data_path = data_path
         self.output = output
         self.comments = comments

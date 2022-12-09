@@ -25,7 +25,7 @@ __all__ = [
     "BASE_DIR", "LOG_DIR", "STATIC_DIR",  # 全局路径 dir
     "global_cf",
     "DB_INFO",  # 数据库配置
-    "TIME_STR",  # 时间戳
+    "TIME_STR", "DT_STR",  # 时间戳
     "LOG_LEVEL", "LOG_ROTATION", "LOG_RETENTION",  # 日志配置
 ]
 
