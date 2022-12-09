@@ -94,7 +94,7 @@ class ReportXlsx(object):
         chart.type = "bar"
         chart.style = 13
         # chart.overlap = 100
-        chart.height = self.row_count*1.3
+        chart.height = 6+(self.row_count*1.2)
         chart.legend.position = "b"  # 下方 显示图例
         chart.title = "FIO性能对比 - {}".format(key.split("-")[0].upper())
         chart.y_axis.title = y_title or 'Test number'

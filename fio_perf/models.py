@@ -16,7 +16,7 @@ class RWTypeEnum(str, Enum):
     """
     参数IO读写类型
     """
-    randwread = "randread"  # 测试随机读的 I/O
+    randread = "randread"  # 测试随机读的 I/O
     randwrite = "randwrite"  # 测试随机写的 I/O
     randrw = "randrw"  # 测试随机混合写和读的 I/O
     read = "read"  # 测试顺序读的 I/O
@@ -55,7 +55,7 @@ class FIOSettings(BaseModel):
     template: Text = ""  # FIO命令行参数配置文件
     target: List[Text]
     # FIO 遍历参数列表，参数传递
-    rw: List[Text] = [RWTypeEnum.randwread.value, RWTypeEnum.randwrite.value]
+    rw: List[Text] = [RWTypeEnum.randread.value, RWTypeEnum.randwrite.value]
     iodepth: List[int] = [1, 2, 4, 8, 16, 32, 64]
     numjobs: List[int] = [1, 2, 4, 8, 16, 32, 64]
     bs: List[Text] = ['4K']
