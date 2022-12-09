@@ -321,11 +321,11 @@ class FIORunner(object):
         if self.settings.drop_caches:
             self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
-        output_file = f"{output_directory}/{test['rw']}-{test['iodepth']}-{test['numjobs']}.json"
         if test["rw"] in self.settings.mixed:
-            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
+            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_d{test['iodepth']}_j{test['numjobs']}"
         else:
-            test_name = f"{test['rw']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
+            test_name = f"{test['rw']}_{test['bs']}_d{test['iodepth']}_j{test['numjobs']}"
+        output_file = f"{output_directory}/{test_name}.json"
 
         command = [
             "fio",

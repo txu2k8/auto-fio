@@ -134,33 +134,6 @@ class ReportXlsx(object):
         self.chart_ws.add_chart(self.bar_chart_lat(), "Q1")
         self.wb.save(os.path.join(os.path.abspath(self.output_path), "report.xlsx"))
 
-        # from copy import deepcopy
-        #
-        # chart2 = deepcopy(chart1)
-        # chart2.style = 11
-        # chart2.type = "bar"
-        # chart2.title = "Horizontal Bar Chart"
-        #
-        # self.chart_ws.add_chart(chart2, "G10")
-        #
-        # chart3 = deepcopy(chart1)
-        # chart3.type = "col"
-        # chart3.style = 12
-        # chart3.grouping = "stacked"
-        # chart3.overlap = 100
-        # chart3.title = 'Stacked Chart'
-        #
-        # self.chart_ws.add_chart(chart3, "A27")
-        #
-        # chart4 = deepcopy(chart1)
-        # chart4.type = "bar"
-        # chart4.style = 13
-        # chart4.grouping = "percentStacked"
-        # chart4.overlap = 100
-        # chart4.title = 'Percent Stacked Chart'
-        #
-        # self.chart_ws.add_chart(chart4, "G27")
-
 
 if __name__ == '__main__':
     pass
