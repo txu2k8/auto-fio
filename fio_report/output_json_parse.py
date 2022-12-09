@@ -176,6 +176,7 @@ class FIOJsonParse(object):
             "bs": (job_options + ["bs"]),
             "rw": (job_options + ["rw"]),
             "bw": (data + ["bw"]),
+            "bw_bytes": (data + ["bw_bytes"]),
             "iops": (data + ["iops"]),
             "iops_stddev": (data + ["iops_stddev"]),
             "lat_ns": (data + ["lat_ns", "mean"]),
@@ -232,7 +233,7 @@ class FIOJsonParse(object):
                         "lat_ms": round(self.get_nested_value(record, m["lat_ns"])/1000/1000, 2),
                         "lat_stddev": self.get_nested_value(record, m["lat_stddev"]),
                         "bw": self.get_nested_value(record, m["bw"]),
-                        "bw_mb": round(self.get_nested_value(record, m["bw"])/1024/1024, 2),
+                        "bw_mb": round(self.get_nested_value(record, m["bw_bytes"])/1024/1024, 2),
                     }
                     row_dict["result"].append(row)
                 item["data"].append(row_dict)

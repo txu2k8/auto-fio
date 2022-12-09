@@ -16,7 +16,7 @@ class RWTypeEnum(str, Enum):
     """
     参数IO读写类型
     """
-    randwread = "randwread"  # 测试随机读的 I/O
+    randwread = "randread"  # 测试随机读的 I/O
     randwrite = "randwrite"  # 测试随机写的 I/O
     randrw = "randrw"  # 测试随机混合写和读的 I/O
     read = "read"  # 测试顺序读的 I/O
@@ -25,7 +25,7 @@ class RWTypeEnum(str, Enum):
     readwrite = "readwrite"  # 测试顺序混合写和读的 I/O, 等同rw
 
 
-RWTypeEnum.randwread.description = "测试随机读的 I/O"
+RWTypeEnum.randread.description = "测试随机读的 I/O"
 RWTypeEnum.randwrite.description = "测试随机写的 I/O"
 RWTypeEnum.randrw.description = "测试随机混合写和读的 I/O"
 RWTypeEnum.read.description = "测试顺序读的 I/O"
@@ -35,7 +35,7 @@ RWTypeEnum.rw.description = "测试顺序混合写和读的 I/O"
 
 class FIOKwargs(BaseModel):
     """FIO参数 - 模型"""
-    fio_bin: Text = "fio_perf"
+    fio_bin: Text = "fio"
     directory: Text
     rw: RWTypeEnum
     bs: Text = '4K'
