@@ -48,3 +48,8 @@ class ExcelReportSettings(BaseModel):
     chart_title: Text = "FIO结果对比"
     chart_x_axis_title: Text = "jobname"
     chart_y_axis_title: Text = ""
+
+    # 描述信息 - 数据表
+    desc_sheet_title: Text = "描述信息"
+    desc_sheet_index: int = 2
+    desc_column_title: Tuple = ("键", "值")

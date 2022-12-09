@@ -9,7 +9,8 @@
 """
 import os
 from loguru import logger
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.utils import get_column_letter
@@ -19,16 +20,22 @@ from fio_report.models import ExcelReportSettings
 
 class ReportXlsx(object):
     """生成EXCEL报告"""
-    def __init__(self, output_path, json_data):
+    def __init__(self, output_path, json_data, comments=None):
+        if comments is None:
+            comments = {}
         self.output_path = output_path
         self.json_data = json_data
+        self.comments = comments
         self.settings = ExcelReportSettings()
         self.row_count = 0
 
         self.wb = Workbook(write_only=False)
+        # 3 张表
         self.data_ws = self.wb.create_sheet(self.settings.data_sheet_title, self.settings.data_sheet_index)
         self.data_ws.append(self.settings.data_column_title)
         self.chart_ws = self.wb.create_sheet(self.settings.chart_sheet_title, self.settings.chart_sheet_index)
+        self.desc_ws = self.wb.create_sheet(self.settings.desc_sheet_title, self.settings.desc_sheet_index)
+        self.desc_ws.append(self.settings.desc_column_title)
 
     @staticmethod
     def get_item_index(items, key):
@@ -43,11 +50,12 @@ class ReportXlsx(object):
                 return idx+1
         raise Exception("{}中没找到:{}".format(items, key))
 
-    def reset_col(self):
-        for idx, col in enumerate(self.data_ws.columns):
+    @staticmethod
+    def reset_col(ws: Worksheet):
+        for idx, col in enumerate(ws.columns):
             letter = get_column_letter(idx + 1)  # 列字母
             collen = max([len(str(c.value).encode()) for c in col])  # 获取这一列长度的最大值
-            self.data_ws.column_dimensions[letter].width = collen * 1.2 + 4  # 也就是列宽为最大长度*1.2 可以自己调整
+            ws.column_dimensions[letter].width = collen * 1.2 + 4  # 也就是列宽为最大长度*1.2 可以自己调整
 
     def write_data_sheet(self):
         for bs_data in self.json_data:
@@ -81,6 +89,18 @@ class ReportXlsx(object):
         self.data_ws.auto_filter.add_sort_condition(f"F2:F{self.row_count+1}")
         self.data_ws.auto_filter.add_sort_condition(f"G2:G{self.row_count+1}")
         self.data_ws.auto_filter.add_sort_condition(f"H2:H{self.row_count+1}")
+
+    def write_desc_sheet(self):
+        """
+        结果数据后，写入备注信息
+        :return:
+        """
+        idx = 1
+        for k, v in self.comments.items():
+            idx += 1
+            self.desc_ws[f"A{idx}"] = k
+            self.desc_ws[f"B{idx}"] = v
+            # self.desc_ws.merge_cells(f'B{idx}:K{idx}')  # 单独表格，不需要合并
 
     def bar_chart(self, key, x_title=None, y_title=None):
         """
@@ -126,7 +146,9 @@ class ReportXlsx(object):
     def create_xlsx_file(self):
         # 创建数据统计表
         self.write_data_sheet()
-        self.reset_col()
+        self.write_desc_sheet()
+        self.reset_col(self.data_ws)
+        self.reset_col(self.desc_ws)
 
         # 创建性能对比图
         self.chart_ws.add_chart(self.bar_chart_bw(), "A1")

@@ -70,6 +70,8 @@ class FIORunner(object):
     def __init__(self, target, template, rw, iodepth, numjobs, bs, rwmixread, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        self.case_id = kwargs["case_id"] if "case_id" in kwargs else ""
+        self.desc = kwargs["desc"] if "desc" in kwargs else ""
         self.output = os.path.abspath(kwargs["output"])
         self.report = kwargs["report"]
         self.dry_run = kwargs["dry_run"]
@@ -322,9 +324,9 @@ class FIORunner(object):
             self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
         if test["rw"] in self.settings.mixed:
-            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_d{test['iodepth']}_j{test['numjobs']}"
+            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
         else:
-            test_name = f"{test['rw']}_{test['bs']}_d{test['iodepth']}_j{test['numjobs']}"
+            test_name = f"{test['rw']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
         output_file = f"{output_directory}/{test_name}.json"
 
         command = [
@@ -355,7 +357,12 @@ class FIORunner(object):
     def generate_report(self):
         logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
         logger.log("STAGE", "分析结果数据、生成测试报告...")
-        FIOReportRunner(data_path=[self.output], output=self.output).run()
+        comments = {
+            "测试命令": ' '.join(sys.argv),
+            "测试描述": self.desc,
+            "测试用例": self.case_id
+        }
+        FIOReportRunner(data_path=[self.output], output=self.output, comments=comments).run()
 
     def run(self):
         """

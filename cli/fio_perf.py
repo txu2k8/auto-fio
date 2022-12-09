@@ -91,7 +91,8 @@ def perf(
     })
     runner = FIORunner(
         target, template, rw, iodepth, numjobs, bs, rwmixread,
-        size=size, runtime=runtime, output=output, report=report, clean=clean, dry_run=dry_run, quiet=quiet
+        size=size, runtime=runtime, output=output, report=report, clean=clean, dry_run=dry_run, quiet=quiet,
+        case_id=case_id, desc=desc,
     )
     runner.run()
 

@@ -83,7 +83,7 @@ class FIOJsonParse(object):
             directory["files"] = sorted(file_list)
             absolute_dir = os.path.abspath(str(directory))
             if not directory["files"]:
-                logger.warning(f"\n没有找到匹配的JSON文件：{str(absolute_dir)}\n")
+                logger.debug(f"\n没有找到匹配的JSON文件：{str(absolute_dir)}\n")
                 continue
             dataset.append(directory)
 
