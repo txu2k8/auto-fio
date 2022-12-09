@@ -7,6 +7,7 @@
 @email:tao.xu2008@outlook.com
 @description: FIO性能测试结果收集 ...
 """
+import os
 import sys
 from typing import List, Text
 from datetime import datetime
@@ -34,9 +35,9 @@ def init_print(**kwargs):
 @app.command(help='FIO测试结果生成csv报告')
 def report_csv(
         data_path: List[Text] = typer.Option(..., help="FIO测试结果数据所在目录"),
-        output: Text = typer.Option(LOG_DIR, help="报告文件输出路径（目录）"),
+        output: Text = typer.Option(os.path.dirname(LOG_DIR), help="报告文件输出路径（目录）"),
 ):
-    init_logger(prefix='report-csv')
+    init_logger(prefix='fio-report-csv')
     init_print(**{
         "input": data_path,
         "output": output,

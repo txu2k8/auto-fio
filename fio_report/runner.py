@@ -7,7 +7,6 @@
 @email:tao.xu2008@outlook.com
 @description: 
 """
-import json
 from loguru import logger
 
 from fio_report.output_json_parse import FIOJsonParse

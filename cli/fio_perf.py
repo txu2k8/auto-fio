@@ -7,6 +7,7 @@
 @email:tao.xu2008@outlook.com
 @description: FIO 性能测试 ...
 """
+import os
 import sys
 from typing import List, Text
 from datetime import datetime
@@ -66,7 +67,7 @@ def perf(
 
         size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
         runtime: int = typer.Option(60, help="执行时长"),
-        output: str = typer.Option(LOG_DIR, help="FIO测试结果保存路径"),
+        output: str = typer.Option(os.path.dirname(LOG_DIR), help="FIO测试结果保存路径"),
         report: bool = typer.Option(True, help="执行完成后生成统计报告"),
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
         dry_run: bool = typer.Option(False, help="不执行fio参数，仅打印执行流程"),
@@ -75,7 +76,7 @@ def perf(
         case_id: int = typer.Option(0, min=0, help="测试用例ID，关联到日志文件名"),
         desc: str = typer.Option('', help="测试描述"),
 ):
-    init_logger(prefix='fio', case_id=case_id, trace=trace)
+    init_logger(prefix='fio-perf', case_id=case_id, trace=trace)
     init_print(case_id, desc, **{
         "target": target,
         "template": template,
