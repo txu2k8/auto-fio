@@ -27,7 +27,6 @@ __all__ = [
     "DB_INFO",  # 数据库配置
     "TIME_STR",  # 时间戳
     "LOG_LEVEL", "LOG_ROTATION", "LOG_RETENTION",  # 日志配置
-    "COSBENCH_ZIP", "COSBENCH_WORKSPACE"  # cosbench 包地址、工作空间
 ]
 
 

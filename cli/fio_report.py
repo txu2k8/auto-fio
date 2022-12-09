@@ -2,10 +2,10 @@
 # -*- coding:utf-8 _*- 
 """
 @author:TXU
-@file:stress
+@file:fio_report.py
 @time:2022/09/01
 @email:tao.xu2008@outlook.com
-@description: CosBench性能测试 ...
+@description: FIO性能测试结果收集 ...
 """
 import sys
 from typing import List, Text

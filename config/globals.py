@@ -41,9 +41,6 @@ DB_INFO = {
     "name": global_cf.get_str("DEFAULT", "db_name", vars=DefaultOption(global_cf.cf, "DEFAULT", db_name='db.sqlite3')),
 }
 
-COSBENCH_ZIP = global_cf.get_str("DEFAULT", "cosbench_zip", vars=DefaultOption(global_cf.cf, "DEFAULT", log_retention=''))
-COSBENCH_WORKSPACE = '/opt/cos/'
-
 # 设置全局 key/value
 _global_dict = {}
 
