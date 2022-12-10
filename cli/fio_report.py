@@ -3,7 +3,7 @@
 """
 @author:TXU
 @file:fio_report.py
-@time:2022/09/01
+@time:2022/11/27
 @email:tao.xu2008@outlook.com
 @description: FIO性能测试结果收集 ...
 """

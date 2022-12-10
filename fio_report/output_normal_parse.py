@@ -3,7 +3,7 @@
 """
 @author:TXU
 @file:get_data
-@time:2022/12/3
+@time:2022/12/04
 @email:tao.xu2008@outlook.com
 @description: 解析FIO normal格式结果文件
 """
