@@ -19,7 +19,7 @@ from numpy import linspace
 
 from config import DT_STR
 from fio_perf import display, loader
-from fio_perf.models import FIOSettings, FIOKwargs
+from fio_perf.models import FIOSettings
 from fio_report.runner import FIOReportRunner
 
 
@@ -87,6 +87,7 @@ class FIORunner(object):
             rwmixread=rwmixread,
             size=kwargs["size"],
             runtime=kwargs["runtime"],
+            extra_opts=kwargs["extra_opts"],
             output=self.output,
             dry_run=kwargs["dry_run"],
             quiet=kwargs["quiet"],
@@ -133,18 +134,6 @@ class FIORunner(object):
         except OSError:
             logger.error(f"Failed to create {directory}")
             sys.exit(1)
-
-    @staticmethod
-    def check_encoding():
-        logger.log("STAGE", "检查环境 ENCODING是否为UTF-8")
-        try:
-            print("\u3000")  # blank space
-        except UnicodeEncodeError:
-            logger.error("""
-            It seems your default encoding is not UTF-8. This script requires UTF-8.
-            You can change the default encoding with 'export PYTHONIOENCODING=UTF-8',
-            """)
-            exit(90)
 
     def check_settings(self):
         """
@@ -218,7 +207,7 @@ class FIORunner(object):
         聚合默认配置和用户自定义配置
         :return:
         """
-        logger.log("STAGE", "聚合FIO参数和配置文件内容参数...")
+        logger.log("STAGE", "聚合FIO参数和配置文件内容参数（TODO）...")
         custom_settings = {}
         self.settings = loader.load_fio_settings({**dict(self.settings), **custom_settings})
         self.check_settings()
@@ -230,9 +219,6 @@ class FIORunner(object):
             )
         else:
             directory = os.path.join(self.settings.output, os.path.basename(test['target']), test['bs'])
-
-        if "run" in test.keys():
-            directory = os.path.join(directory, f"run-{test['run']}")
 
         return directory
 
@@ -252,24 +238,6 @@ class FIORunner(object):
 
         result = [dict(zip(loop_items, item)) for item in benchmark_list]
         self.settings.tests = result
-
-    @staticmethod
-    def _args2cmd(fio: FIOKwargs):
-        """
-        根据参数，生成测试命令
-        :param fio:
-        :return:
-        """
-        name = "{}_{}jobs_{}".format(fio.bs, fio.numjobs, fio.rw)
-        _cmd = f"{fio.fio_bin} --name={name} --directory={fio.directory} " \
-               f"--bs={fio.bs} --rw={fio.rw} --iodepth={fio.iodepth} --numjobs={fio.numjobs} " \
-               f"--ioengine={fio.ioengine} --direct={fio.direct} " \
-               f"--size={fio.size}  "
-        if fio.time_based:
-            _cmd += f"--time_based --runtime={fio.runtime} "
-        if fio.group_reporting:
-            _cmd += "--group_reporting "
-        return _cmd
 
     def expand_command_line(self, command, test):
         """
@@ -300,16 +268,7 @@ class FIORunner(object):
             command.append(f"--rwmixread={test['rwmixread']}")
 
         if self.settings.extra_opts:
-            for option in self.settings.extra_opts:
-                option = str(option)
-                command.append("--" + option)
-
-        if self.settings.ss:
-            command.append(f"--steadystate={self.settings.ss}")
-            if self.settings.ss_dur:
-                command.append(f"--ss_dur={self.settings.ss_dur}")
-            if self.settings.ss_ramp:
-                command.append(f"--ss_ramp={self.settings.ss_ramp}")
+            command.append(self.settings.extra_opts)
 
         return command
 
@@ -373,7 +332,6 @@ class FIORunner(object):
         """
         # 检查环境
         # self.is_fio_installed()
-        # self.check_encoding()
         self.gather_settings()
         self.generate_test_list()
         display.display_header(self.settings)

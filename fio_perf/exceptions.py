@@ -21,13 +21,5 @@ class FIOSettingsFormatError(FileFormatError):
     pass
 
 
-class ClientFormatError(FileFormatError):
-    pass
-
-
-class FIOResultFormatError(FileFormatError):
-    pass
-
-
 if __name__ == '__main__':
     pass

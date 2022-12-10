@@ -67,6 +67,8 @@ def perf(
 
         size: Text = typer.Option('100M', help="单个文件大小，例：1G，单位(B/K/M/G)"),
         runtime: int = typer.Option(60, help="执行时长"),
+        extra_opts: Text = typer.Option('', help="其他参数，拼接为字符串传入"),
+
         output: str = typer.Option(os.path.dirname(LOG_DIR), help="FIO测试结果保存路径"),
         report: bool = typer.Option(True, help="执行完成后生成统计报告"),
         clean: bool = typer.Option(False, help="执行完成后清理数据"),
@@ -87,11 +89,13 @@ def perf(
         "rwmixread": rwmixread,
         "size": size,
         "runtime": runtime,
+        "extra_opts": extra_opts,
         "clean": clean,
     })
     runner = FIORunner(
         target, template, rw, iodepth, numjobs, bs, rwmixread,
-        size=size, runtime=runtime, output=output, report=report, clean=clean, dry_run=dry_run, quiet=quiet,
+        size=size, runtime=runtime, extra_opts=extra_opts,
+        output=output, report=report, clean=clean, dry_run=dry_run, quiet=quiet,
         case_id=case_id, desc=desc,
     )
     runner.run()

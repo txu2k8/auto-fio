@@ -30,7 +30,7 @@ def parse_settings_for_display(settings):
 
 
 def calculate_duration(settings: FIOSettings):
-    number_of_tests = len(settings.tests) * settings.loops
+    number_of_tests = len(settings.tests)
     time_per_test = settings.runtime
     duration_in_seconds = number_of_tests * time_per_test
     duration = str(datetime.timedelta(seconds=duration_in_seconds))
