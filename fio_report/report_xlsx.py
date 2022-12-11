@@ -17,7 +17,7 @@ from openpyxl.chart.label import DataLabelList
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-from fio_report.models import ExcelReportSettings
+from fio_report.models import ExcelReportSettings, PerformanceResult
 
 
 class ReportXlsx(object):
@@ -29,10 +29,12 @@ class ReportXlsx(object):
         self.json_data = json_data
         self.comments = comments
         self.settings = ExcelReportSettings()
-        self.row_count = 2
-        self.col_max = string.ascii_uppercase[len(self.settings.data_column_title[0])-1]
-        self.write_idx = self.settings.data_column_write_idx
-        self.read_idx = self.settings.data_column_write_idx + 3
+
+        self.title_row_count = len(self.settings.data_column_title)
+        self.row_count = len(self.settings.data_column_title)  # 数据行数从表头行后开始
+        self.col_max = string.ascii_uppercase[len(self.settings.data_column_title[0])-1]  # 最大的列名
+        self.write_idx = self.settings.data_column_write_idx  # 写结果 idx
+        self.read_idx = self.settings.data_column_write_idx + len(PerformanceResult().dict().keys())  # 读结果 idx
 
         self.wb = Workbook(write_only=False)
         # 创建4张表
@@ -87,7 +89,7 @@ class ReportXlsx(object):
             for idx_c, item in enumerate(row):
                 item.border = border
                 item.font = data_font
-                if idx_r < len(self.settings.data_column_title):
+                if idx_r < self.title_row_count:
                     # 表头
                     item.alignment = ali
                     item.font = title_font
@@ -108,10 +110,11 @@ class ReportXlsx(object):
         # 插入表头
         for column_title in self.settings.data_column_title:
             self.data_ws.append(column_title)
-        for c in string.ascii_uppercase[:self.write_idx]:
-            self.data_ws.merge_cells(f'{c}1:{c}2')
-        # self.data_ws.merge_cells('J1:L1')
-        # self.data_ws.merge_cells('M1:O1')
+        if self.title_row_count > 1:
+            for c in string.ascii_uppercase[:self.write_idx]:
+                self.data_ws.merge_cells(f'{c}1:{c}2')
+            # self.data_ws.merge_cells('J1:L1')
+            # self.data_ws.merge_cells('M1:O1')
 
         # 插入数据
         for bs_data in self.json_data:
@@ -144,7 +147,7 @@ class ReportXlsx(object):
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1
-        self.data_ws.auto_filter.ref = f"A2:I{self.row_count}"
+        self.data_ws.auto_filter.ref = f"A{self.title_row_count}:I{self.row_count}"
         self.data_ws.auto_filter.add_filter_column(0, [])
         # self.data_ws.auto_filter.add_sort_condition(f"F3:F{self.row_count}")
         # self.data_ws.auto_filter.add_sort_condition(f"G3:G{self.row_count}")
@@ -188,7 +191,7 @@ class ReportXlsx(object):
         chart.title = "FIO性能对比 - {}".format(key.split("-")[0].upper())
         chart.y_axis.title = y_title or 'Test number'
         chart.x_axis.title = x_title or 'Test Job Name'
-        col_index = self.get_item_index(self.settings.data_column_title[1], key)
+        col_index = self.get_item_index(self.settings.data_column_title[0], key+"-write")  # 1, key
         data1 = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index, max_col=col_index)
         data2 = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index+3, max_col=col_index+3)
         cats = Reference(self.data_ws, min_row=2, max_row=self.row_count, min_col=1)
