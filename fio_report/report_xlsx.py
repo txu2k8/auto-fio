@@ -12,7 +12,7 @@ import string
 from loguru import logger
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.chart import BarChart, Reference
+from openpyxl.chart import BarChart, Reference, BarChart3D
 from openpyxl.chart.label import DataLabelList
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -206,6 +206,19 @@ class ReportXlsx(object):
 
         return chart
 
+    def bar_chart_3d(self, key):
+        col_index = self.get_item_index(self.settings.data_column_title[0], key + "-write")  # 1, key
+        col_index2 = self.get_item_index(self.settings.data_column_title[0], "iodepth")  # 1, key
+        data = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index, max_col=col_index)
+        data2 = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index2, max_col=col_index2)
+        cats = Reference(self.data_ws, min_row=2, max_row=self.row_count, min_col=1)
+        chart = BarChart3D()
+        chart.title = "3D Bar Chart"
+        chart.add_data(data=data, titles_from_data=True)
+        chart.add_data(data=data2, titles_from_data=True)
+        chart.set_categories(cats)
+        return chart
+
     def bar_chart_bw(self):
         return self.bar_chart("bw", y_title="Test number(MiB)")
 
@@ -215,7 +228,7 @@ class ReportXlsx(object):
     def bar_chart_lat(self):
         return self.bar_chart("latency", y_title="Test number(ms)")
 
-    def insert_to_chart_sheet(self):
+    def insert_to_bar_chart_sheet(self):
         self.chart_ws.add_chart(self.bar_chart_bw(), "A1")
         self.chart_ws.add_chart(self.bar_chart_iops(), "I1")
         self.chart_ws.add_chart(self.bar_chart_lat(), "Q1")
@@ -226,7 +239,7 @@ class ReportXlsx(object):
         # 写入描述表
         self.insert_to_desc_sheet()
         # 写入性能对比图
-        self.insert_to_chart_sheet()
+        self.insert_to_bar_chart_sheet()
         # 保存
         self.wb.save(os.path.join(os.path.abspath(self.output_path), "report.xlsx"))
 
