@@ -70,8 +70,8 @@ class ExcelReportSettings(BaseModel):
     # 结果统计 - 数据表
     data_sheet_title: Text = "结果统计"
     data_sheet_index: int = 0
-    data_column_title: Tuple = generate_column_title_1()
-    data_column_write_idx = len(FIOResult().dict().keys()) - 2  # 测试结果开始列 -- write列
+    data_column_title: Tuple[Tuple] = (generate_column_title_2(),)
+    data_column_write_idx = len(FIOResult().dict().keys()) - 2  # 测试结果开始列 -- bw-write列
 
     # 对比分析 - 图表
     chart_sheet_title: Text = "对比分析"
