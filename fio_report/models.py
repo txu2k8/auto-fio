@@ -18,16 +18,60 @@ class ReportSettings(BaseModel):
     input_directory: List[Text] = []
 
 
+class PerformanceResult(BaseModel):
+    """性能测试结果 - 数据模型"""
+    bw: int = 0
+    iops: int = 0
+    latency: int = 0
+
+
+class FIOResult(BaseModel):
+    """FIO测试结果 - 数据模型"""
+    jobname: Text = ''
+    rw: Text = ''
+    iodepth: Text = ''
+    numjobs: Text = ''
+    bs: Text = ''
+    size: Text = ''
+    runtime: int = 0
+    ioengine: Text = ''
+    direct: int = 1
+    write: PerformanceResult = PerformanceResult()
+    read: PerformanceResult = PerformanceResult()
+
+
+def generate_column_title_1():
+    title_row_1 = []
+    title_row_2 = []
+    for k, v in FIOResult().dict().items():
+        if isinstance(v, dict):
+            for p_k, p_v in v.items():
+                title_row_1.append(k)
+                title_row_2.append(p_k)
+        else:
+            title_row_1.append(k)
+            title_row_2.append(v)
+    return title_row_1, title_row_2
+
+
+def generate_column_title_2():
+    title_row = []
+    for k, v in FIOResult().dict().items():
+        if isinstance(v, dict):
+            for p_k, p_v in v.items():
+                title_row.append(f"{p_k}-{k}")
+        else:
+            title_row.append(k)
+    return title_row
+
+
 class ExcelReportSettings(BaseModel):
     """报告 配置信息 - 数据模型"""
     # 结果统计 - 数据表
     data_sheet_title: Text = "结果统计"
     data_sheet_index: int = 0
-    data_column_title: Tuple = (
-        'jobname', 'rw', 'iodepth', 'numjobs', 'bs',
-        'bw-write', 'iops-write', 'latency-write',
-        'bw-read', 'iops-read', 'latency-read'
-    )
+    data_column_title: Tuple = generate_column_title_1()
+    data_column_write_idx = len(FIOResult().dict().keys()) - 2  # 测试结果开始列 -- write列
 
     # 对比分析 - 图表
     chart_sheet_title: Text = "对比分析"
@@ -46,3 +90,7 @@ class ExcelReportSettings(BaseModel):
     # 环境配置 - 数据表
     env_sheet_title: Text = "环境配置"
     env_sheet_index: int = 3
+
+
+if __name__ == "__main__":
+    print(generate_column_title_2())

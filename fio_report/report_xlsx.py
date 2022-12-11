@@ -8,11 +8,13 @@
 @description: 生成Excel报告
 """
 import os
+import string
 from loguru import logger
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.label import DataLabelList
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
 from fio_report.models import ExcelReportSettings
@@ -27,21 +29,22 @@ class ReportXlsx(object):
         self.json_data = json_data
         self.comments = comments
         self.settings = ExcelReportSettings()
-        self.row_count = 0
+        self.row_count = 2
+        self.col_max = string.ascii_uppercase[len(self.settings.data_column_title[0])-1]
+        self.write_idx = self.settings.data_column_write_idx
+        self.read_idx = self.settings.data_column_write_idx + 3
 
         self.wb = Workbook(write_only=False)
-        # 3 张表
+        # 创建4张表
         self.data_ws = self.wb.create_sheet(self.settings.data_sheet_title, self.settings.data_sheet_index)
-        self.data_ws.append(self.settings.data_column_title)
         self.chart_ws = self.wb.create_sheet(self.settings.chart_sheet_title, self.settings.chart_sheet_index)
         self.desc_ws = self.wb.create_sheet(self.settings.desc_sheet_title, self.settings.desc_sheet_index)
-        self.desc_ws.append(self.settings.desc_column_title)
         self.env_ws = self.wb.create_sheet(self.settings.env_sheet_title, self.settings.env_sheet_index)
 
     @staticmethod
     def get_item_index(items, key):
         """
-        获取 key在items中的位置
+        获取 key在items中的列位置
         :param items:
         :param key:
         :return:
@@ -52,13 +55,65 @@ class ReportXlsx(object):
         raise Exception("{}中没找到:{}".format(items, key))
 
     @staticmethod
-    def reset_col(ws: Worksheet):
+    def reset_col_width(ws: Worksheet):
+        """
+        重置表格的列宽
+        """
         for idx, col in enumerate(ws.columns):
             letter = get_column_letter(idx + 1)  # 列字母
             collen = max([len(str(c.value).encode()) for c in col])  # 获取这一列长度的最大值
             ws.column_dimensions[letter].width = collen * 1.2 + 4  # 也就是列宽为最大长度*1.2 可以自己调整
 
-    def write_data_sheet(self):
+    def reset_data_sheet_style(self):
+        # 设置字体
+        title_font = Font(name='微软雅黑', size=12, b=True)
+        data_font = Font(name='微软雅黑', size=11, b=False)
+        # 设置文本对齐
+        ali = Alignment(horizontal='center', vertical='center')
+        """
+        horizontal:水平对齐('centerContinuous', 'general', 'distributed', 'left', 'fill', 'center', 'justify', 'right')
+        vertical:垂直对齐（'distributed', 'top', 'center', 'justify', 'bottom'）
+        """
+        # 设置图案填充，颜色一般使用十六进制RGB，'solid'是图案填充类型，详细可查阅文档
+        fill = PatternFill('solid', fgColor='90B248')
+        fill_write = PatternFill('solid', fgColor='BCD08A')
+        fill_read = PatternFill('solid', fgColor='E6EDD4')
+        # 设置边框
+        side = Side(style='thin', color='000000')  # 设置边框样式
+        border = Border(top=side, bottom=side, left=side, right=side)
+
+        data = self.data_ws[f"A1:{self.col_max}{self.row_count}"]
+        for idx_r, row in enumerate(data):
+            for idx_c, item in enumerate(row):
+                item.border = border
+                item.font = data_font
+                if idx_r < len(self.settings.data_column_title):
+                    # 表头
+                    item.alignment = ali
+                    item.font = title_font
+                    if idx_c < self.write_idx:
+                        item.fill = fill
+                    elif idx_c < self.read_idx:
+                        item.fill = fill_write
+                    else:
+                        item.fill = fill_read
+                if idx_c < self.write_idx:
+                    # 描述列 居中
+                    item.alignment = ali
+
+    def insert_to_data_sheet(self):
+        """
+        data数据表
+        """
+        # 插入表头
+        for column_title in self.settings.data_column_title:
+            self.data_ws.append(column_title)
+        for c in string.ascii_uppercase[:self.write_idx]:
+            self.data_ws.merge_cells(f'{c}1:{c}2')
+        # self.data_ws.merge_cells('J1:L1')
+        # self.data_ws.merge_cells('M1:O1')
+
+        # 插入数据
         for bs_data in self.json_data:
             for data in bs_data['data']:
                 row = [
@@ -68,6 +123,10 @@ class ReportXlsx(object):
                     data['iodepth'],
                     data['numjobs'],
                     data['bs'],
+                    data['size'],
+                    data['runtime'],
+                    data['ioengine'],
+                    data['direct'],
                     # 写 结果
                     0,
                     0,
@@ -78,30 +137,39 @@ class ReportXlsx(object):
                     0,
                 ]
                 for result in data["result"]:
-                    idx_start = 5 if result["type"] == "write" else 8
+                    idx_start = self.write_idx if result["type"] == "write" else self.read_idx
                     row[idx_start+0] = result['bw_mb']
                     row[idx_start+1] = result['iops']
                     row[idx_start+2] = result['lat_ms']
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1
-        self.data_ws.auto_filter.ref = f"A1:K{self.row_count+1}"
+        self.data_ws.auto_filter.ref = f"A2:I{self.row_count}"
         self.data_ws.auto_filter.add_filter_column(0, [])
-        self.data_ws.auto_filter.add_sort_condition(f"F2:F{self.row_count+1}")
-        self.data_ws.auto_filter.add_sort_condition(f"G2:G{self.row_count+1}")
-        self.data_ws.auto_filter.add_sort_condition(f"H2:H{self.row_count+1}")
+        # self.data_ws.auto_filter.add_sort_condition(f"F3:F{self.row_count}")
+        # self.data_ws.auto_filter.add_sort_condition(f"G3:G{self.row_count}")
+        # self.data_ws.auto_filter.add_sort_condition(f"H3:H{self.row_count}")
+        # 重置列宽
+        self.reset_col_width(self.data_ws)
+        # 重置格式
+        self.reset_data_sheet_style()
 
-    def write_desc_sheet(self):
+    def insert_to_desc_sheet(self):
         """
         结果数据后，写入备注信息
         :return:
         """
+        # 插入表头
+        self.desc_ws.append(self.settings.desc_column_title)
+        # 插入数据
         idx = 1
         for k, v in self.comments.items():
             idx += 1
             self.desc_ws[f"A{idx}"] = k
             self.desc_ws[f"B{idx}"] = v
             # self.desc_ws.merge_cells(f'B{idx}:K{idx}')  # 单独表格，不需要合并
+        # 重置列宽
+        self.reset_col_width(self.desc_ws)
 
     def bar_chart(self, key, x_title=None, y_title=None):
         """
@@ -120,10 +188,10 @@ class ReportXlsx(object):
         chart.title = "FIO性能对比 - {}".format(key.split("-")[0].upper())
         chart.y_axis.title = y_title or 'Test number'
         chart.x_axis.title = x_title or 'Test Job Name'
-        col_index = self.get_item_index(self.settings.data_column_title, key)
-        data1 = Reference(self.data_ws, min_row=1, max_row=self.row_count+1, min_col=col_index, max_col=col_index)
-        data2 = Reference(self.data_ws, min_row=1, max_row=self.row_count+1, min_col=col_index+3, max_col=col_index+3)
-        cats = Reference(self.data_ws, min_row=2, max_row=self.row_count+1, min_col=1)
+        col_index = self.get_item_index(self.settings.data_column_title[1], key)
+        data1 = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index, max_col=col_index)
+        data2 = Reference(self.data_ws, min_row=1, max_row=self.row_count, min_col=col_index+3, max_col=col_index+3)
+        cats = Reference(self.data_ws, min_row=2, max_row=self.row_count, min_col=1)
         chart.add_data(data1, titles_from_data=True)
         chart.add_data(data2, titles_from_data=True)
         chart.set_categories(cats)
@@ -136,25 +204,27 @@ class ReportXlsx(object):
         return chart
 
     def bar_chart_bw(self):
-        return self.bar_chart("bw-write", y_title="Test number(MiB)")
+        return self.bar_chart("bw", y_title="Test number(MiB)")
 
     def bar_chart_iops(self):
-        return self.bar_chart("iops-write")
+        return self.bar_chart("iops")
 
     def bar_chart_lat(self):
-        return self.bar_chart("latency-write", y_title="Test number(ms)")
+        return self.bar_chart("latency", y_title="Test number(ms)")
 
-    def create_xlsx_file(self):
-        # 创建数据统计表
-        self.write_data_sheet()
-        self.write_desc_sheet()
-        self.reset_col(self.data_ws)
-        self.reset_col(self.desc_ws)
-
-        # 创建性能对比图
+    def insert_to_chart_sheet(self):
         self.chart_ws.add_chart(self.bar_chart_bw(), "A1")
         self.chart_ws.add_chart(self.bar_chart_iops(), "I1")
         self.chart_ws.add_chart(self.bar_chart_lat(), "Q1")
+
+    def create_xlsx_file(self):
+        # 写入数据统计表
+        self.insert_to_data_sheet()
+        # 写入描述表
+        self.insert_to_desc_sheet()
+        # 写入性能对比图
+        self.insert_to_chart_sheet()
+        # 保存
         self.wb.save(os.path.join(os.path.abspath(self.output_path), "report.xlsx"))
 
 
