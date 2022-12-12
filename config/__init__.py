@@ -11,10 +11,11 @@ from config.globals import *
 from config.cf_yaml import *
 
 
-__version__ = "1.0.1"
+__version__ = "v1.0.0 - 2022-12-11"
+__author__ = "Written by tao.xu <tao.xu2008@outlook.com>"
 
 __all__ = [
-    "__version__",
+    "__version__", "__author__",
     # 基本方法
     "ConfigIni", "read_yaml",
     # 全局内存变量-读写

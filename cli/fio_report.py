@@ -17,6 +17,7 @@ import typer
 from cli.log import init_logger
 from cli.main import app
 from config import LOG_DIR
+from cli.main import __author__
 from fio_report.runner import FIOReportRunner
 
 
@@ -32,7 +33,7 @@ def init_print(**kwargs):
     # logger.log('DESC', '*' * 48)
 
 
-@app.command(help='FIO测试结果生成csv报告')
+@app.command(help=f'FIO测试结果生成csv报告（{__author__}）')
 def report_csv(
         data_path: List[Text] = typer.Option(..., help="FIO测试结果数据所在目录"),
         output: Text = typer.Option(os.path.dirname(LOG_DIR), help="报告文件输出路径（目录）"),

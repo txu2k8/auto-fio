@@ -1,1 +1,1 @@
-pyinstaller -F -n fio_test --clean main.py
+pyinstaller -F -n fio_tool --clean main.py

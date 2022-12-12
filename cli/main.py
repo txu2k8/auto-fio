@@ -10,12 +10,13 @@
 import typer
 from typing import Optional
 
-from config import __version__
+from config import __version__, __author__
 
 
 def version_callback(value: bool):
     if value:
-        print(f"FIO-TEST-AUTO Version: {__version__}")
+        print(__version__)
+        print(__author__)
         raise typer.Exit()
 
 
