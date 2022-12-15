@@ -17,7 +17,6 @@ import typer
 from cli.log import init_logger
 from cli.main import app
 from config import LOG_DIR
-from cli.main import __author__
 from fio_perf.models import RWTypeEnum
 from fio_perf.runner import FIORunner
 
@@ -56,7 +55,7 @@ def str_split_callback(value: str):
     return ret_value
 
 
-@app.command(help=f'FIO性能测试（{__author__}）')
+@app.command(help=f'FIO性能测试')
 def perf(
         template: Text = typer.Option('', exists=True, resolve_path=True, help="FIO测试配置文件路径（如果需要更多参数，可以使用配置文件）TODO"),
         target: List[Text] = typer.Option(..., callback=str_split_callback, help="【列表，逗号分隔】FIO测试目标路径"),

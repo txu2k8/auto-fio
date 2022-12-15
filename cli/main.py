@@ -29,7 +29,7 @@ def public(
     pass
 
 
-app = typer.Typer(name="Perf", callback=public, add_completion=False, help="FIO测试工具自动化 CLI.")
+app = typer.Typer(name="Perf", callback=public, add_completion=False, help=f"FIO测试工具自动化 CLI.\n\n{__author__}")
 
 
 if __name__ == '__main__':
