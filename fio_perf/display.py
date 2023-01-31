@@ -10,7 +10,7 @@
 import datetime
 from loguru import logger
 
-from fio_perf.models import FIOSettings, DESCRIPTIONS
+from fio_perf.models import FIOParameters, DESCRIPTIONS
 
 
 def parse_settings_for_display(settings):
@@ -29,29 +29,29 @@ def parse_settings_for_display(settings):
     return data
 
 
-def calculate_duration(settings: FIOSettings):
-    number_of_tests = len(settings.tests)
-    time_per_test = settings.runtime
+def calculate_duration(parameters: FIOParameters):
+    number_of_tests = len(parameters.tests)
+    time_per_test = parameters.runtime
     duration_in_seconds = number_of_tests * time_per_test
     duration = str(datetime.timedelta(seconds=duration_in_seconds))
     return duration
 
 
-def display_header(settings: FIOSettings):
+def display_header(parameters: FIOParameters):
     logger.log('DESC', '{0}参数信息{0}'.format('*' * 20))
-    dict_settings = dict(settings)
+    dict_settings = dict(parameters)
     data = parse_settings_for_display(dict_settings)
     fl = 30  # Width of left column of text
-    duration = calculate_duration(settings)
-    if settings.dry_run:
+    duration = calculate_duration(parameters)
+    if parameters.dry_run:
         logger.warning(" ====---> WARNING - DRY RUN <---==== ")
     len_test = "TestCase Count"
     estimated = "Estimated duration"
-    logger.log('DESC', f"{len_test:<{fl}}: {len(settings.tests):<}")
+    logger.log('DESC', f"{len_test:<{fl}}: {len(parameters.tests):<}")
     logger.log('DESC', f"{estimated:<{fl}}: {duration:<}")
 
     for item in dict_settings.keys():
-        if item not in settings.filter_items:
+        if item not in parameters.filter_items:
             description = DESCRIPTIONS[item]
             if item in data.keys():
                 logger.log('DESC', f"{description:<{fl}}: {data[item]:<}")

@@ -17,7 +17,7 @@ class FileFormatError(MyBaseError):
     pass
 
 
-class FIOSettingsFormatError(FileFormatError):
+class FIOParametersFormatError(FileFormatError):
     pass
 
 

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 @author:TXU
-@file:runner
+@file:runners
 @time:2022/11/27
 @email:tao.xu2008@outlook.com
 @description: 
@@ -10,17 +10,14 @@
 import os
 import sys
 import time
-import shutil
 import itertools
 from pathlib import Path
-import subprocess
 from loguru import logger
 from numpy import linspace
 
-from config import DT_STR
 from fio_perf import display, loader
-from fio_perf.models import FIOSettings
-from fio_report.runner import FIOReportRunner
+from fio_perf.models import FIOParameters
+from fio_perf.runners.base import FIOBaseRunner
 
 
 def progress_bar(iter_obj):
@@ -65,19 +62,12 @@ def progress_bar(iter_obj):
     sys.stdout.flush()
 
 
-class FIORunner(object):
-    """FIO 执行引擎"""
+class FIOParametersRunner(FIOBaseRunner):
+    """FIO 执行引擎 - 参数排列组合执行、收集结果"""
 
     def __init__(self, target, template, rw, iodepth, numjobs, bs, rwmixread, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.case_id = kwargs["case_id"] if "case_id" in kwargs else ""
-        self.desc = kwargs["desc"] if "desc" in kwargs else ""
-        self.output = os.path.abspath(kwargs["output"])
-        self.report = kwargs["report"]
-        self.dry_run = kwargs["dry_run"]
-
-        self.settings = FIOSettings(
+        super(FIOParametersRunner, self).__init__(args, kwargs)
+        self.parameters = FIOParameters(
             target=target,
             template=str(template),
             rw=rw,
@@ -89,81 +79,39 @@ class FIORunner(object):
             runtime=kwargs["runtime"],
             extra_opts=kwargs["extra_opts"],
             output=self.output,
-            dry_run=kwargs["dry_run"],
-            quiet=kwargs["quiet"],
+            dry_run=self.dry_run,
+            quiet=self.quiet,
         )
 
-    @staticmethod
-    def _exec(cmd):
-        logger.log("RUN",  cmd)
-        rc, output = subprocess.getstatusoutput(cmd)
-        logger.debug(output.strip('\n'))
-        return rc, output
-
-    def is_fio_installed(self):
-        logger.log("STAGE", "检查FIO工具是否安装...")
-        command = "fio_perf"
-        if shutil.which(command) is None:
-            logger.error("Fio executable not found in path. Is Fio installed?")
-            sys.exit(1)
-
-        logger.log("STAGE", "检查FIO工具版本...")
-        command = ["fio", "--version"]
-        rc, output = self._exec(command)
-        result = output.strip()
-        if "fio-3" in result:
-            return True
-        elif "fio-2" in result:
-            logger.error(f"Your Fio version ({result}) is not compatible. Please use Fio-3.x")
-            sys.exit(1)
-        else:
-            logger.error("Could not detect Fio version.")
-            sys.exit(1)
-
-    def drop_caches(self):
-        # logger.info("清除环境cache...")
-        command = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
-        self._exec(command)
-
-    @staticmethod
-    def make_directory(directory):
-        try:
-            if not os.path.exists(directory):
-                logger.log("STAGE", f"创建FIO测试结果保存目录：{directory}")
-                os.makedirs(directory)
-        except OSError:
-            logger.error(f"Failed to create {directory}")
-            sys.exit(1)
-
-    def check_settings(self):
+    def check_parameters(self):
         """
         检查配置 有效性
         :return:
         """
         logger.log("STAGE", "检查FIO参数配置有效性...")
-        if self.settings.type not in ["device", "rbd"] and not self.settings.size:
+        if self.parameters.type not in ["device", "rbd"] and not self.parameters.size:
             logger.error("When the target is a file or directory, --size must be specified.")
             sys.exit(4)
-        if self.settings.type == "directory":
-            for item in self.settings.target:
+        if self.parameters.type == "directory":
+            for item in self.parameters.target:
                 if not os.path.exists(item):
                     logger.error(f"The target directory ({item}) doesn't seem to exist.")
                     sys.exit(5)
 
-        for mode in self.settings.rw:
+        for mode in self.parameters.rw:
             writemodes = ['write', 'randwrite', 'rw', 'readwrite', 'trimwrite']
-            if mode in writemodes and not self.settings.destructive:
-                logger.error(f"Mode {mode} will overwrite data on {self.settings.target} but destructive flag not set.")
+            if mode in writemodes and not self.parameters.destructive:
+                logger.error(f"Mode {mode} will overwrite data on {self.parameters.target} but destructive flag not set.")
                 sys.exit(1)
 
-            if mode in self.settings.mixed:
-                if self.settings.rwmixread:
-                    self.settings.loop_items.append("rwmixread")
+            if mode in self.parameters.mixed:
+                if self.parameters.rwmixread:
+                    self.parameters.loop_items.append("rwmixread")
                 else:
                     logger.error("If a mixed (read/write) mode is specified, please specify --rwmixread")
                     sys.exit(8)
             else:
-                self.settings.filter_items.append("rwmixread")
+                self.parameters.filter_items.append("rwmixread")
 
     @staticmethod
     def check_target_type(target, filetype):
@@ -202,23 +150,23 @@ class FIORunner(object):
         else:
             return None
 
-    def gather_settings(self):
+    def gather_parameters(self):
         """
         聚合默认配置和用户自定义配置
         :return:
         """
         logger.log("STAGE", "聚合FIO参数和配置文件内容参数（TODO）...")
-        custom_settings = {}
-        self.settings = loader.load_fio_settings({**dict(self.settings), **custom_settings})
-        self.check_settings()
+        custom_parameters = {}
+        self.parameters = loader.load_fio_parameters({**dict(self.parameters), **custom_parameters})
+        self.check_parameters()
 
     def generate_output_directory(self, test):
-        if test["rw"] in self.settings.mixed:
+        if test["rw"] in self.parameters.mixed:
             directory = os.path.join(
-                self.settings.output, os.path.basename(test['target']), f"{test['rw']}{test['rwmixread']}", test['bs']
+                self.parameters.output, os.path.basename(test['target']), f"{test['rw']}{test['rwmixread']}", test['bs']
             )
         else:
-            directory = os.path.join(self.settings.output, os.path.basename(test['target']), test['bs'])
+            directory = os.path.join(self.parameters.output, os.path.basename(test['target']), test['bs'])
 
         return directory
 
@@ -228,16 +176,16 @@ class FIORunner(object):
         :return:
         """
         logger.log("STAGE", "条件组合生成待测试项...")
-        loop_items = self.settings.loop_items
-        dict_settings = dict(self.settings)
+        loop_items = self.parameters.loop_items
+        dict_parameters = dict(self.parameters)
         dataset = []
         for item in loop_items:
-            result = dict_settings[item]
+            result = dict_parameters[item]
             dataset.append(result)
         benchmark_list = list(itertools.product(*dataset))
 
         result = [dict(zip(loop_items, item)) for item in benchmark_list]
-        self.settings.tests = result
+        self.parameters.tests = result
 
     def expand_command_line(self, command, test):
         """
@@ -247,15 +195,15 @@ class FIORunner(object):
         :return:
         """
         # 通用参数
-        if self.settings.size:
-            command.append(f"--size={self.settings.size}")
-        if self.settings.runtime and not self.settings.entire_device:
-            command.append(f"--runtime={self.settings.runtime}")
-        if self.settings.time_based:
+        if self.parameters.size:
+            command.append(f"--size={self.parameters.size}")
+        if self.parameters.runtime and not self.parameters.entire_device:
+            command.append(f"--runtime={self.parameters.runtime}")
+        if self.parameters.time_based:
             command.append("--time_based")
-        command.append(f"--ioengine={self.settings.ioengine}")
-        command.append(f"--direct={self.settings.direct}")
-        if self.settings.group_reporting:
+        command.append(f"--ioengine={self.parameters.ioengine}")
+        command.append(f"--direct={self.parameters.direct}")
+        if self.parameters.group_reporting:
             command.append("--group_reporting")
 
         # 测试轮巡 指定参数
@@ -264,11 +212,11 @@ class FIORunner(object):
                 continue
             command.append(f"--{k}={v}")
 
-        if self.settings.rwmixread and test["rw"] in self.settings.mixed:
+        if self.parameters.rwmixread and test["rw"] in self.parameters.mixed:
             command.append(f"--rwmixread={test['rwmixread']}")
 
-        if self.settings.extra_opts:
-            command.append(self.settings.extra_opts)
+        if self.parameters.extra_opts:
+            command.append(self.parameters.extra_opts)
 
         return command
 
@@ -280,10 +228,10 @@ class FIORunner(object):
         :return:
         """
         logger.log("STAGE", f"执行FIO测试{idx+1}：{test}")
-        if self.settings.drop_caches:
+        if self.parameters.drop_caches:
             self.drop_caches()  # 清理缓存
         output_directory = self.generate_output_directory(test)
-        if test["rw"] in self.settings.mixed:
+        if test["rw"] in self.parameters.mixed:
             test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
         else:
             test_name = f"{test['rw']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
@@ -295,17 +243,17 @@ class FIORunner(object):
             f"--output={output_file}",
             f"--name={test_name}",
         ]
-        if self.settings.template:
-            command.append(self.settings.template)
+        if self.parameters.template:
+            command.append(self.parameters.template)
 
-        target_parameter = self.check_target_type(test["target"], self.settings.type)
+        target_parameter = self.check_target_type(test["target"], self.parameters.type)
         if target_parameter:
             command.append(f"{target_parameter}={test['target']}")
 
         command = self.expand_command_line(command, test)
         command_str = str(" ".join(command))
 
-        if self.settings.dry_run:
+        if self.parameters.dry_run:
             logger.log("DESC", command_str)
             return
 
@@ -314,17 +262,6 @@ class FIORunner(object):
         logger.info(output)
         return
 
-    def generate_report(self):
-        logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
-        logger.log("STAGE", "分析结果数据、生成测试报告...")
-        comments = {
-            "测试时间": DT_STR,
-            "测试命令": ' '.join(sys.argv),
-            "测试描述": self.desc,
-            "测试用例": self.case_id
-        }
-        FIOReportRunner(data_path=[self.output], output=self.output, comments=comments).run()
-
     def run(self):
         """
         执行测试，入口
@@ -332,12 +269,12 @@ class FIORunner(object):
         """
         # 检查环境
         # self.is_fio_installed()
-        self.gather_settings()
+        self.gather_parameters()
         self.generate_test_list()
-        display.display_header(self.settings)
-        tests = self.settings.tests
+        display.display_header(self.parameters)
+        tests = self.parameters.tests
 
-        if self.settings.quiet:
+        if self.parameters.quiet:
             for idx, test in enumerate(tests):
                 self.run_test(test, idx)
         else:

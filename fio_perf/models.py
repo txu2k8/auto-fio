@@ -35,6 +35,16 @@ RWTypeEnum.rw.description = "测试顺序混合写和读的 I/O"
 
 class FIOSettings(BaseModel):
     """FIO 配置信息 - 数据模型"""
+    # 框架相关参数
+    drop_caches: bool = True
+    type: Text = "directory"
+    dry_run: bool = False
+    quiet: bool = False
+    output: Text = "./"
+
+
+class FIOParameters(FIOSettings):
+    """FIO 测试参数信息 - 数据模型"""
     # 测试目标、参数模板
     template: Text = ""  # FIO命令行参数配置文件
     target: List[Text]
@@ -57,13 +67,6 @@ class FIOSettings(BaseModel):
     destructive: bool = True
     extra_opts: Text = ""  # 其他参数，拼接为字符串，如： “--key value --bool_key”
 
-    # 框架相关参数
-    drop_caches: bool = True
-    type: Text = "directory"
-    dry_run: bool = False
-    quiet: bool = False
-    output: Text = "./"
-
     # 定义常量
     mixed: List = ["readwrite", "rw", "randrw"]  # mixed测试类型列表
     loop_items: List = [
@@ -83,7 +86,7 @@ class FIOSettings(BaseModel):
         "quiet",
     ]
 
-    # 计算保存数据
+    # 组合计算后，保存测试项
     tests: List = []
 
 
@@ -109,3 +112,10 @@ DESCRIPTIONS = {
         "destructive": "Allow destructive writes",
         "group_reporting": "group reporting"
     }
+
+
+class FIOParmFiles(BaseModel):
+    """FIO 配置文件信息 - 数据模型"""
+    # 测试目标、参数模板
+    client: Text = ""  # FIO命令行参数配置文件
+    parmfile: List[Text]
