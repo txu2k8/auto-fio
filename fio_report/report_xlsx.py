@@ -143,7 +143,7 @@ class ReportXlsx(object):
                     idx_start = self.write_idx if result["type"] == "write" else self.read_idx
                     row[idx_start+0] = result['bw_mb']
                     row[idx_start+1] = result['iops']
-                    row[idx_start+2] = result['lat_ms']  # lat_ms
+                    row[idx_start+2] = result['clat_ms']  # lat_ms
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1
