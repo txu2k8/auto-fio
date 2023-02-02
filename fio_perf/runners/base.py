@@ -10,11 +10,55 @@
 import os
 import sys
 import shutil
+import time
 import subprocess
 from loguru import logger
+from numpy import linspace
 
 from config import DT_STR
 from fio_report.runner import FIOReportRunner
+
+
+def progress_bar(iter_obj):
+    """https://stackoverflow.com/questions/3160699/python-progress-bar/49234284#49234284"""
+
+    def sec_to_str(sec):
+        m, s = divmod(sec, 60)
+        h, m = divmod(m, 60)
+        return "%d:%02d:%02d" % (h, m, s)
+
+    len_iter_obj = len(iter_obj)
+    steps = {
+        int(x): y
+        for x, y in zip(
+            linspace(0, len_iter_obj, min(100, len_iter_obj), endpoint=False),
+            linspace(0, 100, min(100, len_iter_obj), endpoint=False),
+        )
+    }
+    # quarter and half block chars
+    q_steps = ["", "\u258E", "\u258C", "\u258A"]
+    start_t = time.time()
+    time_str = "   [0:00:00, -:--:--]"
+    activity = [" -", " \\", " |", " /"]
+    for nn, item in enumerate(iter_obj):
+        bar_str = ""
+        if nn in steps:
+            done = "\u2588" * int(steps[nn] / 4.0) + q_steps[int(steps[nn] % 4)]
+            todo = " " * (25 - len(done))
+            bar_str = "%4d%% |%s%s|" % (steps[nn], done, todo)
+        if nn > 0:
+            end_t = time.time()
+            time_str = " [%s, %s]" % (
+                sec_to_str(end_t - start_t),
+                sec_to_str((end_t - start_t) * (len_iter_obj / float(nn) - 1)),
+            )
+        sys.stdout.write("\r" + bar_str + activity[nn % 4] + time_str)
+        sys.stdout.flush()
+        yield item
+    bar_str = "%4d%% |%s|" % (100, "\u2588" * 25)
+    time_str = "   [%s, 0:00:00]\n\n" % (sec_to_str(time.time() - start_t))
+    sys.stdout.write("\r" + bar_str + time_str)
+    sys.stdout.flush()
 
 
 class FIOBaseRunner(object):
@@ -82,6 +126,33 @@ class FIOBaseRunner(object):
             "测试用例": self.case_id
         }
         FIOReportRunner(data_path=[self.output], output=self.output, comments=comments).run()
+
+
+def parse_fio_parmfile(parmfile):
+    """
+    解析FIO配置文件
+    :param parmfile:
+    :return:
+    """
+    test_parameter = {"path": parmfile, "desc": parmfile}
+    with open(parmfile, 'r') as f:
+        for line in f.readlines():
+            line = line.strip('\n')
+            if not line:
+                continue
+            if line.startswith('['):
+                if "global" not in line:
+                    test_parameter['desc'] = line.strip('[').strip(']')
+            else:
+                kv = line.split('=')
+                if len(kv) == 1:
+                    test_parameter[kv[0].strip()] = ''
+                elif len(kv) == 2:
+                    test_parameter[kv[0].strip()] = kv[1].strip()
+                else:
+                    raise Exception(f"参数错误! {line}")
+    test_parameter["target"] = test_parameter["directory"] if "directory" in test_parameter else ""
+    return test_parameter
 
 
 if __name__ == '__main__':

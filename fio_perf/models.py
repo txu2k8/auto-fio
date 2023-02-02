@@ -41,6 +41,11 @@ class FIOSettings(BaseModel):
     dry_run: bool = False
     quiet: bool = False
     output: Text = "./"
+    # 组合计算后，保存测试项
+    tests: List = []
+    estimated_duration = 0  # 估计测试时间
+    # 定义常量
+    mixed: List = ["readwrite", "rw", "randrw"]  # mixed测试类型列表
 
 
 class FIOParameters(FIOSettings):
@@ -67,8 +72,7 @@ class FIOParameters(FIOSettings):
     destructive: bool = True
     extra_opts: Text = ""  # 其他参数，拼接为字符串，如： “--key value --bool_key”
 
-    # 定义常量
-    mixed: List = ["readwrite", "rw", "randrw"]  # mixed测试类型列表
+
     loop_items: List = [
         "target",
         "rw",
@@ -85,9 +89,6 @@ class FIOParameters(FIOSettings):
         "mixed",
         "quiet",
     ]
-
-    # 组合计算后，保存测试项
-    tests: List = []
 
 
 # FIO参数描述
@@ -114,8 +115,8 @@ DESCRIPTIONS = {
     }
 
 
-class FIOParmFiles(BaseModel):
+class FIOParmFiles(FIOSettings):
     """FIO 配置文件信息 - 数据模型"""
     # 测试目标、参数模板
     client: Text = ""  # FIO命令行参数配置文件
-    parmfile: List[Text]
+    parmfile: Text  # fio 测试配置文件/文件目录

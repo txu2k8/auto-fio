@@ -9,64 +9,21 @@
 """
 import os
 import sys
-import time
+
 import itertools
 from pathlib import Path
 from loguru import logger
-from numpy import linspace
 
 from fio_perf import display, loader
 from fio_perf.models import FIOParameters
-from fio_perf.runners.base import FIOBaseRunner
-
-
-def progress_bar(iter_obj):
-    """https://stackoverflow.com/questions/3160699/python-progress-bar/49234284#49234284"""
-
-    def sec_to_str(sec):
-        m, s = divmod(sec, 60)
-        h, m = divmod(m, 60)
-        return "%d:%02d:%02d" % (h, m, s)
-
-    len_iter_obj = len(iter_obj)
-    steps = {
-        int(x): y
-        for x, y in zip(
-            linspace(0, len_iter_obj, min(100, len_iter_obj), endpoint=False),
-            linspace(0, 100, min(100, len_iter_obj), endpoint=False),
-        )
-    }
-    # quarter and half block chars
-    q_steps = ["", "\u258E", "\u258C", "\u258A"]
-    start_t = time.time()
-    time_str = "   [0:00:00, -:--:--]"
-    activity = [" -", " \\", " |", " /"]
-    for nn, item in enumerate(iter_obj):
-        bar_str = ""
-        if nn in steps:
-            done = "\u2588" * int(steps[nn] / 4.0) + q_steps[int(steps[nn] % 4)]
-            todo = " " * (25 - len(done))
-            bar_str = "%4d%% |%s%s|" % (steps[nn], done, todo)
-        if nn > 0:
-            end_t = time.time()
-            time_str = " [%s, %s]" % (
-                sec_to_str(end_t - start_t),
-                sec_to_str((end_t - start_t) * (len_iter_obj / float(nn) - 1)),
-            )
-        sys.stdout.write("\r" + bar_str + activity[nn % 4] + time_str)
-        sys.stdout.flush()
-        yield item
-    bar_str = "%4d%% |%s|" % (100, "\u2588" * 25)
-    time_str = "   [%s, 0:00:00]\n\n" % (sec_to_str(time.time() - start_t))
-    sys.stdout.write("\r" + bar_str + time_str)
-    sys.stdout.flush()
+from fio_perf.runners.base import FIOBaseRunner, progress_bar
 
 
 class FIOParametersRunner(FIOBaseRunner):
     """FIO 执行引擎 - 参数排列组合执行、收集结果"""
 
     def __init__(self, target, template, rw, iodepth, numjobs, bs, rwmixread, *args, **kwargs):
-        super(FIOParametersRunner, self).__init__(args, kwargs)
+        super(FIOParametersRunner, self).__init__(*args, **kwargs)
         self.parameters = FIOParameters(
             target=target,
             template=str(template),

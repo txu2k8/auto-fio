@@ -50,6 +50,10 @@ class ConfigIni(object):
         self.cf = configparser.ConfigParser()
         self.cf.read(file_path, encoding='utf-8')
 
+    @property
+    def sections(self):
+        return self.cf.sections()
+
     # 获取字符串的配置内容
     def get_str(self, section, option, vars=None):
         """

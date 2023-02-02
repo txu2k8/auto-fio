@@ -7,10 +7,11 @@
 @email:tao.xu2008@outlook.com
 @description: 
 """
+import os
 import datetime
 from loguru import logger
 
-from fio_perf.models import FIOParameters, DESCRIPTIONS
+from fio_perf.models import FIOParameters, DESCRIPTIONS, FIOParmFiles
 
 
 def parse_settings_for_display(settings):
@@ -58,6 +59,28 @@ def display_header(parameters: FIOParameters):
             else:
                 if dict_settings[item]:
                     logger.log('DESC', f"{description}:<{fl}: {dict_settings[item]:<}")
+    logger.log('DESC', '{0}开始执行{0}'.format('*' * 20))
+
+
+def display_parmfile(parameters: FIOParmFiles):
+    logger.log('DESC', '{0}参数信息{0}'.format('*' * 20))
+    fl = 30  # Width of left column of text
+    duration = 'NA'
+    if parameters.estimated_duration:
+        duration = str(datetime.timedelta(seconds=parameters.estimated_duration))
+    if parameters.dry_run:
+        logger.warning(" ====---> WARNING - DRY RUN <---==== ")
+    client_desc = "Test Client"
+    count_desc = "TestCase Count"
+    client = parameters.client or "localhost"
+    estimated_desc = "Estimated duration"
+    logger.log('DESC', f"{client_desc:<{fl}}: {client:<}")
+    logger.log('DESC', f"{count_desc:<{fl}}: {len(parameters.tests):<}")
+    logger.log('DESC', f"{estimated_desc:<{fl}}: {duration:<}")
+
+    for test in parameters.tests:
+        desc = 'TestCase ParmFile'
+        logger.log('DESC', f"{desc:<{fl}}: {test['path']:<}")
     logger.log('DESC', '{0}开始执行{0}'.format('*' * 20))
 
 
