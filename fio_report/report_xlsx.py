@@ -121,12 +121,12 @@ class ReportXlsx(object):
             for data in bs_data['data']:
                 row = [
                     # 测试 重要参数
-                    data['jobname'],
+                    data['name'],
                     data['rw'],
                     data['iodepth'],
                     data['numjobs'],
                     data['bs'],
-                    data['size'],
+                    data['filesize'],
                     data['runtime'],
                     data['ioengine'],
                     data['direct'],
@@ -143,7 +143,7 @@ class ReportXlsx(object):
                     idx_start = self.write_idx if result["type"] == "write" else self.read_idx
                     row[idx_start+0] = result['bw_mb']
                     row[idx_start+1] = result['iops']
-                    row[idx_start+2] = result['lat_ms']
+                    row[idx_start+2] = result['lat_ms']  # lat_ms
                 logger.debug(row)
                 self.data_ws.append(row)
                 self.row_count += 1

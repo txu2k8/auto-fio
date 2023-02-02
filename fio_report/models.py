@@ -32,7 +32,7 @@ class FIOResult(BaseModel):
     iodepth: Text = ''
     numjobs: Text = ''
     bs: Text = ''
-    size: Text = ''
+    filesize: Text = ''
     runtime: int = 0
     ioengine: Text = ''
     direct: int = 1

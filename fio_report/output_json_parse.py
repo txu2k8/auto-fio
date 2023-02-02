@@ -98,6 +98,7 @@ class FIOJsonParse(object):
         for item in dataset:
             item["rawdata"] = []
             for f in item["files"]:
+                print(f)
                 item["rawdata"].append(self._import_json_data(f))
         return dataset
 
@@ -130,16 +131,16 @@ class FIOJsonParse(object):
         else:
             raise KeyError
 
-    def validate_job_options(self, dataset):
+    def validate_job_options(self, record):
         """
         验证job options
-        :param dataset:
+        :param record:
         :return:
         """
         job_options_raw = ["jobs", 0, "job options"]
         try:
-            self.walk_dictionary(dataset[0]['rawdata'][0], job_options_raw)
-            self.validate_job_option_key(dataset[0]['rawdata'][0])
+            self.walk_dictionary(record, job_options_raw)
+            self.validate_job_option_key(record)
             return job_options_raw
         except KeyError:
             return ['global options']
@@ -157,16 +158,16 @@ class FIOJsonParse(object):
             logger.info("See also: https://github.com/louwrentius/fio-plot/issues/64")
             sys.exit(1)
 
-    def get_json_mapping(self, mode, dataset):
+    def get_json_mapping(self, mode, record):
         """
         获取JSON文件中对应值的mapping路径
-        :param mode:
-        :param dataset:
+        :param mode: read|write
+        :param record:
         :return:
         """
-        self.validate_number_of_jobs(dataset)
+
         root = ["jobs", 0]
-        job_options = self.validate_job_options(dataset)
+        job_options = self.validate_job_options(record)
         data = root + [mode]
         dictionary = {
             "fio_version": ["fio version"],
@@ -183,6 +184,8 @@ class FIOJsonParse(object):
             "bw_bytes": (data + ["bw_bytes"]),
             "iops": (data + ["iops"]),
             "iops_stddev": (data + ["iops_stddev"]),
+            "slat_ns": (data + ["slat_ns", "mean"]),
+            "clat_ns": (data + ["clat_ns", "mean"]),
             "lat_ns": (data + ["lat_ns", "mean"]),
             "lat_stddev": (data + ["lat_ns", "stddev"]),
             "latency_ms": (root + ["latency_ms"]),
@@ -194,56 +197,91 @@ class FIOJsonParse(object):
 
         return dictionary
 
+    def get_json_options(self, record):
+        """
+        从"global options"、"job options"获取测试参数配置
+        :param record: json数据记录
+        :return:
+        """
+        options = {
+            "jobname": "",
+            "rw": "",
+            "iodepth": "",
+            "numjobs": "",
+            "bs": "",
+            "filesize": "",
+            "runtime": "",
+            "ioengine": "",
+            "direct": "",
+        }
+        # 先查找"global options"中数据
+        if "global options" in record:
+            global_options = self.get_nested_value(record, ['global options'])
+            options.update(global_options)
+        job_options = self.get_nested_value(record, ["jobs", 0, "job options"])
+        options.update(job_options)
+        return options
+
+    def get_json_result(self, record, rw):
+        """
+        从json的jobs中获取结果数据
+        :param record:
+        :param rw: 读写方式
+        :return:
+        """
+        if rw in ["rw", "readwrite", "randrw"]:
+            modes = ["read", "write"]
+        elif rw in ["read", "write"]:
+            modes = [rw]
+        else:
+            modes = [rw[4:]]
+
+        # 获取结果（read、write除外）
+        m = self.get_json_mapping(modes[0], record)
+        row_dict = {
+            "latency_ms": self.get_nested_value(record, m["latency_ms"]),
+            "latency_us": self.get_nested_value(record, m["latency_us"]),
+            "latency_ns": self.get_nested_value(record, m["latency_ns"]),
+            "cpu_sys": self.get_nested_value(record, m["cpu_sys"]),
+            "cpu_usr": self.get_nested_value(record, m["cpu_usr"]),
+            "fio_version": self.get_nested_value(record, m["fio_version"]),
+            "result": []
+        }
+
+        # 获取 read、write 结果
+        result = []
+        for mode in modes:
+            m = self.get_json_mapping(mode, record)
+            row = {
+                "type": mode,
+                "iops": round(self.get_nested_value(record, m["iops"]), 0),
+                "iops_stddev": self.get_nested_value(record, m["iops_stddev"]),
+                "slat": self.get_nested_value(record, m["slat_ns"]),
+                "clat": self.get_nested_value(record, m["clat_ns"]),
+                "lat": self.get_nested_value(record, m["lat_ns"]),
+                "clat_ms": round(self.get_nested_value(record, m["clat_ns"]) / 1000 / 1000, 2),
+                "lat_ms": round(self.get_nested_value(record, m["lat_ns"]) / 1000 / 1000, 2),
+                "lat_stddev": self.get_nested_value(record, m["lat_stddev"]),
+                "bw": self.get_nested_value(record, m["bw"]),
+                "bw_mb": round(self.get_nested_value(record, m["bw_bytes"]) / 1024 / 1024, 2),
+            }
+            result.append(row)
+        row_dict["result"] = result
+        return row_dict
+
     def get_flat_json_mapping(self, dataset):
         """
         获取 dataset 数据结构中所有JSON文件的元素值，保存到 dataset[idx]["data"]
         :param dataset:
         :return:
         """
+        self.validate_number_of_jobs(dataset)
         for item in dataset:
             item["data"] = []
             for record in item["rawdata"]:
-                options = self.validate_job_options(dataset)
-                self.settings.rw = self.get_nested_value(record, options + ["rw"])
-                if self.settings.rw in ["rw", "readwrite", "randrw"]:
-                    modes = self.settings.filter
-                elif self.settings.rw in ["read", "write"]:
-                    modes = [self.settings.rw]
-                else:
-                    modes = [self.get_nested_value(record, options + ["rw"])[4:]]
-
-                m = self.get_json_mapping(self.settings.rw, dataset)
-                row_dict = {
-                    "jobname": self.get_nested_value(record, m["jobname"]),
-                    "iodepth": int(self.get_nested_value(record, m["iodepth"])),
-                    "numjobs": int(self.get_nested_value(record, m["numjobs"])),
-                    "bs": self.get_nested_value(record, m["bs"]),
-                    "rw": self.get_nested_value(record, m["rw"]),
-                    "size": self.get_nested_value(record, m["size"]),
-                    "runtime": int(self.get_nested_value(record, m["runtime"])),
-                    "ioengine": self.get_nested_value(record, m["ioengine"]),
-                    "direct": int(self.get_nested_value(record, m["direct"])),
-                    "latency_ms": self.get_nested_value(record, m["latency_ms"]),
-                    "latency_us": self.get_nested_value(record, m["latency_us"]),
-                    "latency_ns": self.get_nested_value(record, m["latency_ns"]),
-                    "cpu_sys": self.get_nested_value(record, m["cpu_sys"]),
-                    "cpu_usr": self.get_nested_value(record, m["cpu_usr"]),
-                    "fio_version": self.get_nested_value(record, m["fio_version"]),
-                    "result": []
-                }
-                for mode in modes:
-                    m = self.get_json_mapping(mode, dataset)
-                    row = {
-                        "type": mode,
-                        "iops": round(self.get_nested_value(record, m["iops"]), 0),
-                        "iops_stddev": self.get_nested_value(record, m["iops_stddev"]),
-                        "lat": self.get_nested_value(record, m["lat_ns"]),
-                        "lat_ms": round(self.get_nested_value(record, m["lat_ns"])/1000/1000, 2),
-                        "lat_stddev": self.get_nested_value(record, m["lat_stddev"]),
-                        "bw": self.get_nested_value(record, m["bw"]),
-                        "bw_mb": round(self.get_nested_value(record, m["bw_bytes"])/1024/1024, 2),
-                    }
-                    row_dict["result"].append(row)
+                all_options = self.get_json_options(record)
+                row_dict = self.get_json_result(record, all_options["rw"])
+                row_dict.update(all_options)
                 item["data"].append(row_dict)
         return dataset
 
