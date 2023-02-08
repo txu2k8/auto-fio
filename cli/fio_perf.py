@@ -119,7 +119,7 @@ def perf1(
 @app.command(help=f'FIO性能测试 - 方式2：传入配置文件/目录，遍历执行')
 def perf2(
         client: Text = typer.Option('', exists=True, resolve_path=True, help="FIO多客户端执行时，客户端列表或配置文件路径（可选）"),
-        parmfile: Text = typer.Option(..., help="FIO测试job配置文件路径"),
+        parmfile: Text = typer.Option(..., "--parmfile", "-f", help="FIO测试job配置文件路径"),
 
         output: str = typer.Option(os.path.dirname(LOG_DIR), help="FIO测试结果保存路径"),
         report: bool = typer.Option(True, help="执行完成后生成统计报告"),
