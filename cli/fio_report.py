@@ -36,8 +36,9 @@ def init_print(**kwargs):
 def report_csv(
         data_path: List[Text] = typer.Option(..., help="FIO测试结果数据所在目录"),
         output: Text = typer.Option(os.path.dirname(LOG_DIR), help="报告文件输出路径（目录）"),
+        trace: bool = typer.Option(False, help="print TRACE level log"),
 ):
-    init_logger(prefix='fio-report-csv')
+    init_logger(prefix='fio-report-csv', trace=trace)
     init_print(**{
         "input": data_path,
         "output": output,

@@ -23,36 +23,41 @@ class FIOJsonParse(object):
             input_directory=data_path,
         )
 
-    @staticmethod
-    def _filter_json_files(filename):
+    def _filter_json_files(self, filename):
         """
         验证并筛选 fio json文件有效性
         :param filename:
         :return:
         """
-        with open(filename, 'r') as candidate_file:
-            try:
-                candidate_json = json.load(candidate_file)
-                if candidate_json["fio version"]:
-                    return filename
-                else:
-                    logger.debug(f"无效的fio结果文件：{filename}，忽略！")
-            except Exception as e:
-                logger.warning(e)
+        d = self._loads_json_data(filename)
+        if d["fio version"]:
+            return filename
+        else:
+            logger.debug(f"无效的fio结果文件：{filename}，忽略！")
 
     @staticmethod
-    def _import_json_data(filename):
+    def _loads_json_data(filename):
         """
         加载JSON文件，返回字典/列表
         :param filename:
         :return:
         """
-        with open(filename) as json_data:
-            try:
-                d = json.load(json_data)
-            except json.decoder.JSONDecodeError:
-                print(f"Failed to JSON parse {filename}")
-                sys.exit(1)
+        json_data = ""
+        with open(filename) as f:
+            json_start = False
+            for line in f.readlines():
+                if not json_start:
+                    if "{" in line:
+                        json_start = True
+                        json_data += line
+                    continue
+                json_data += line
+
+        try:
+            d = json.loads(json_data)
+        except json.decoder.JSONDecodeError:
+            print(f"Failed to JSON parse {filename}")
+            sys.exit(1)
         return d
 
     def list_json_files(self):
@@ -64,6 +69,7 @@ class FIOJsonParse(object):
         input_directories = []
         for directory in self.settings.input_directory:
             absolute_dir = os.path.abspath(directory)
+            print(absolute_dir)
             for dir_path, dir_names, file_names in os.walk(absolute_dir):
                 input_dir_struct = {"directory": dir_path, "files": []}
                 for file in file_names:
@@ -99,7 +105,7 @@ class FIOJsonParse(object):
             item["rawdata"] = []
             for f in item["files"]:
                 print(f)
-                item["rawdata"].append(self._import_json_data(f))
+                item["rawdata"].append(self._loads_json_data(f))
         return dataset
 
     @staticmethod
@@ -131,32 +137,13 @@ class FIOJsonParse(object):
         else:
             raise KeyError
 
-    def validate_job_options(self, record):
+    def get_job_options_mapping(self, record):
         """
-        验证job options
+        获取 job options映射
         :param record:
         :return:
         """
-        job_options_raw = ["jobs", 0, "job options"]
-        try:
-            self.walk_dictionary(record, job_options_raw)
-            self.validate_job_option_key(record)
-            return job_options_raw
-        except KeyError:
-            return ['global options']
-
-    @staticmethod
-    def validate_number_of_jobs(dataset):
-        """
-        验证 JSON文件中job数量，目前只支持 1 job
-        :param dataset:
-        :return:
-        """
-        length = len(dataset[0]['rawdata'][0]['jobs'])
-        if length > 1:
-            logger.error(f"\n 暂时不支持处理JSON文件中存在多个job：({length}) jobs\n")
-            logger.info("See also: https://github.com/louwrentius/fio-plot/issues/64")
-            sys.exit(1)
+        return ["client_stats", 0, "job options"] if "client_stats" in record else ["jobs", 0, "job options"]
 
     def get_json_mapping(self, mode, record):
         """
@@ -167,7 +154,22 @@ class FIOJsonParse(object):
         """
 
         root = ["jobs", 0]
-        job_options = self.validate_job_options(record)
+        if "client_stats" in record:
+            client_stats = record["client_stats"]
+            len_client_stats = len(client_stats)
+            if len_client_stats == 1:
+                root = ['client_stats', 0]
+            elif len_client_stats > 1:
+                for idx, job in enumerate(client_stats):
+                    if job["jobname"] == "All clients":
+                        root = ['client_stats', idx]
+                        break
+                else:
+                    raise Exception("未找到 All clients！")
+            else:
+                raise Exception("client_stats的job数为0！")
+
+        job_options = self.get_job_options_mapping(record)
         data = root + [mode]
         dictionary = {
             "fio_version": ["fio version"],
@@ -218,7 +220,8 @@ class FIOJsonParse(object):
         if "global options" in record:
             global_options = self.get_nested_value(record, ['global options'])
             options.update(global_options)
-        job_options = self.get_nested_value(record, ["jobs", 0, "job options"])
+        # 再查找各个JOB中 job options
+        job_options = self.get_nested_value(record, self.get_job_options_mapping(record))
         options.update(job_options)
         return options
 
@@ -275,7 +278,6 @@ class FIOJsonParse(object):
         :param dataset:
         :return:
         """
-        self.validate_number_of_jobs(dataset)
         for item in dataset:
             item["data"] = []
             for record in item["rawdata"]:

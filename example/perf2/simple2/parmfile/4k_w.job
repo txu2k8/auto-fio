@@ -1,0 +1,15 @@
+[global]
+time_based
+runtime=20
+fsync=16
+iodepth=4
+thread
+ioengine=libaio
+group_reporting
+[4K-16-WRITE]
+directory=/export/perf
+rw=randwrite
+bs=4K
+filesize=128K
+numjobs=16
+name=fio_libaio_128K_4K_16_WRITE
