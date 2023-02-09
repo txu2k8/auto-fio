@@ -43,6 +43,7 @@ class FIOJsonParse(object):
         :return:
         """
         json_data = ""
+        none_json_data = "\n"
         with open(filename) as f:
             json_start = False
             for line in f.readlines():
@@ -50,14 +51,15 @@ class FIOJsonParse(object):
                     if "{" in line:
                         json_start = True
                         json_data += line
+                    else:
+                        none_json_data += line
                     continue
                 json_data += line
-
+        logger.warning(none_json_data)
         try:
             d = json.loads(json_data)
         except json.decoder.JSONDecodeError:
-            print(f"Failed to JSON parse {filename}")
-            sys.exit(1)
+            raise Exception(f"Failed to JSON parse {filename}")
         return d
 
     def list_json_files(self):
