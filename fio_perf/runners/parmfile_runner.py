@@ -79,12 +79,11 @@ class FIOParmFileRunner(FIOBaseRunner):
             self.parameters.estimated_duration += int(test["runtime"]) if "runtime" in test else 0
 
     def generate_output_directory(self, test):
-        if test["rw"] in self.parameters.mixed:
-            directory = os.path.join(
-                self.parameters.output, os.path.basename(test['target']), f"{test['rw']}{test['rwmixread']}", test['bs']
-            )
+        directory = os.path.join(self.parameters.output, os.path.basename(test['target']), test['bs'])
+        if "rwmixread" in test:
+            directory = os.path.join(directory, f"{test['rw']}{test['rwmixread']}")
         else:
-            directory = os.path.join(self.parameters.output, os.path.basename(test['target']), test['bs'])
+            directory = os.path.join(directory, f"{test['rw']}")
 
         return directory
 

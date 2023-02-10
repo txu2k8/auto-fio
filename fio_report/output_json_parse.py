@@ -156,6 +156,7 @@ class FIOJsonParse(object):
         """
 
         root = ["jobs", 0]
+        client_num = 1
         if "client_stats" in record:
             client_stats = record["client_stats"]
             len_client_stats = len(client_stats)
@@ -166,6 +167,7 @@ class FIOJsonParse(object):
                     if job["jobname"] == "All clients":
                         root = ['client_stats', idx]
                         break
+                    client_num += 1
                 else:
                     raise Exception("未找到 All clients！")
             else:
@@ -199,7 +201,7 @@ class FIOJsonParse(object):
             "cpu_sys": (root + ["sys_cpu"]),
         }
 
-        return dictionary
+        return dictionary, client_num
 
     def get_json_options(self, record):
         """
@@ -242,7 +244,7 @@ class FIOJsonParse(object):
             modes = [rw[4:]]
 
         # 获取结果（read、write除外）
-        m = self.get_json_mapping(modes[0], record)
+        m, client_num = self.get_json_mapping(modes[0], record)
         row_dict = {
             "latency_ms": self.get_nested_value(record, m["latency_ms"]),
             "latency_us": self.get_nested_value(record, m["latency_us"]),
@@ -250,13 +252,14 @@ class FIOJsonParse(object):
             "cpu_sys": self.get_nested_value(record, m["cpu_sys"]),
             "cpu_usr": self.get_nested_value(record, m["cpu_usr"]),
             "fio_version": self.get_nested_value(record, m["fio_version"]),
+            "client_num": client_num,
             "result": []
         }
 
         # 获取 read、write 结果
         result = []
         for mode in modes:
-            m = self.get_json_mapping(mode, record)
+            m, _ = self.get_json_mapping(mode, record)
             row = {
                 "type": mode,
                 "iops": round(self.get_nested_value(record, m["iops"]), 0),

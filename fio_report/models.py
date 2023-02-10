@@ -28,14 +28,15 @@ class PerformanceResult(BaseModel):
 class FIOResult(BaseModel):
     """FIO测试结果 - 数据模型"""
     jobname: Text = ''
-    rw: Text = ''
+    client_num: int = 1
+    ioengine: Text = ''
+    runtime: int = 0
+    direct: int = 1
     iodepth: Text = ''
     numjobs: Text = ''
-    bs: Text = ''
     filesize: Text = ''
-    runtime: int = 0
-    ioengine: Text = ''
-    direct: int = 1
+    bs: Text = ''
+    rw: Text = ''
     write: PerformanceResult = PerformanceResult()
     read: PerformanceResult = PerformanceResult()
 

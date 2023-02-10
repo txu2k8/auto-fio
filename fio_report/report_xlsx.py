@@ -122,14 +122,15 @@ class ReportXlsx(object):
                 row = [
                     # 测试 重要参数
                     data['name'],
-                    data['rw'],
+                    data['client_num'],
+                    data['ioengine'],
+                    data['runtime'],
+                    data['direct'],
                     data['iodepth'],
                     data['numjobs'],
-                    data['bs'],
                     data['filesize'],
-                    data['runtime'],
-                    data['ioengine'],
-                    data['direct'],
+                    data['bs'],
+                    data['rw'],
                     # 写 结果
                     0,
                     0,
