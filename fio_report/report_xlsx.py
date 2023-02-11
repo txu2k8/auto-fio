@@ -64,7 +64,7 @@ class ReportXlsx(object):
         for idx, col in enumerate(ws.columns):
             letter = get_column_letter(idx + 1)  # 列字母
             collen = max([len(str(c.value).encode()) for c in col])  # 获取这一列长度的最大值
-            ws.column_dimensions[letter].width = collen * 1.2 + 4  # 也就是列宽为最大长度*1.2 可以自己调整
+            ws.column_dimensions[letter].width = collen  # collen * 1.2 + 4 也就是列宽为最大长度*1.2+4 可以自己调整
 
     def reset_data_sheet_style(self):
         # 设置字体
@@ -102,6 +102,9 @@ class ReportXlsx(object):
                 if idx_c < self.write_idx:
                     # 描述列 居中
                     item.alignment = ali
+                    if idx_c == 0 and idx_r > 0:
+                        # 第一列除表头外，左对齐
+                        item.alignment = Alignment(horizontal='left', vertical='center')
 
     def insert_to_data_sheet(self):
         """

@@ -28,7 +28,7 @@ class PerformanceResult(BaseModel):
 class FIOResult(BaseModel):
     """FIO测试结果 - 数据模型"""
     jobname: Text = ''
-    client_num: int = 1
+    client: int = 1  # 客户端数量
     ioengine: Text = ''
     runtime: int = 0
     direct: int = 1
