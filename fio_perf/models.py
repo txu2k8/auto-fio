@@ -72,7 +72,6 @@ class FIOParameters(FIOSettings):
     destructive: bool = True
     extra_opts: Text = ""  # 其他参数，拼接为字符串，如： “--key value --bool_key”
 
-
     loop_items: List = [
         "target",
         "rw",

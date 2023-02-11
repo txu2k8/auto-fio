@@ -15,6 +15,28 @@ from loguru import logger
 from fio_report.models import ReportSettings
 
 
+def get_json_file_content(filename):
+    """
+    获取json输出文件的字符内容
+    :param filename:
+    :return: （json字符串、非json字符串）
+    """
+    json_str = ""
+    none_json_str = "\n"
+    with open(filename) as f:
+        json_start = False
+        for line in f.readlines():
+            if not json_start:
+                if "{" in line:
+                    json_start = True
+                    json_str += line
+                else:
+                    none_json_str += line
+                continue
+            json_str += line
+    return json_str, none_json_str
+
+
 class FIOJsonParse(object):
     """解析加载FIO JSON 文件"""
 
@@ -35,29 +57,15 @@ class FIOJsonParse(object):
         else:
             logger.debug(f"无效的fio结果文件：{filename}，忽略！")
 
-    @staticmethod
-    def _loads_json_data(filename):
+    def _loads_json_data(self, filename):
         """
-        加载JSON文件，返回字典/列表
+        加载JSON文件中json字符串内容，返回字典/列表
         :param filename:
         :return:
         """
-        json_data = ""
-        none_json_data = "\n"
-        with open(filename) as f:
-            json_start = False
-            for line in f.readlines():
-                if not json_start:
-                    if "{" in line:
-                        json_start = True
-                        json_data += line
-                    else:
-                        none_json_data += line
-                    continue
-                json_data += line
-        logger.warning(none_json_data)
+        json_str, _ = get_json_file_content(filename)
         try:
-            d = json.loads(json_data)
+            d = json.loads(json_str)
         except json.decoder.JSONDecodeError:
             raise Exception(f"Failed to JSON parse {filename}")
         return d

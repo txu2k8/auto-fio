@@ -117,22 +117,13 @@ class FIOParametersRunner(FIOBaseRunner):
         self.parameters = loader.load_fio_parameters({**dict(self.parameters), **custom_parameters})
         self.check_parameters()
 
-    def generate_output_directory(self, test):
-        if test["rw"] in self.parameters.mixed:
-            directory = os.path.join(
-                self.parameters.output, os.path.basename(test['target']), f"{test['rw']}{test['rwmixread']}", test['bs']
-            )
-        else:
-            directory = os.path.join(self.parameters.output, os.path.basename(test['target']), test['bs'])
-
-        return directory
-
     def generate_test_list(self):
         """
         根据输入的参数列表，遍历生成待测试的条件组合
         :return:
         """
         logger.log("STAGE", "条件组合生成待测试项...")
+        self.gather_parameters()
         loop_items = self.parameters.loop_items
         dict_parameters = dict(self.parameters)
         dataset = []
@@ -143,6 +134,9 @@ class FIOParametersRunner(FIOBaseRunner):
 
         result = [dict(zip(loop_items, item)) for item in benchmark_list]
         self.parameters.tests = result
+
+        display.display_header(self.parameters)
+        return result
 
     def expand_command_line(self, command, test):
         """
@@ -177,28 +171,17 @@ class FIOParametersRunner(FIOBaseRunner):
 
         return command
 
-    def run_test(self, test, idx):
+    def generate_fio_command(self, test):
         """
-        执行单项测试
-        :param test: 待执行项参数
-        :param idx: 待执行项 序号
+        生成FIO执行命令
+        :param test:
         :return:
         """
-        logger.log("STAGE", f"执行FIO测试{idx+1}：{test}")
-        if self.parameters.drop_caches:
-            self.drop_caches()  # 清理缓存
-        output_directory = self.generate_output_directory(test)
-        if test["rw"] in self.parameters.mixed:
-            test_name = f"{test['rw']}{test['rwmixread']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
-        else:
-            test_name = f"{test['rw']}_{test['bs']}_{test['iodepth']}_{test['numjobs']}"
-        output_file = f"{output_directory}/{test_name}.json"
-
         command = [
             "fio",
             "--output-format=json",
-            f"--output={output_file}",
-            f"--name={test_name}",
+            f"--output={test['output']}",
+            f"--name={test['name']}",
         ]
         if self.parameters.template:
             command.append(self.parameters.template)
@@ -208,38 +191,8 @@ class FIOParametersRunner(FIOBaseRunner):
             command.append(f"{target_parameter}={test['target']}")
 
         command = self.expand_command_line(command, test)
-        command_str = str(" ".join(command))
 
-        if self.parameters.dry_run:
-            logger.log("DESC", command_str)
-            return
-
-        self.make_directory(output_directory)
-        rc, output = self._exec(command_str)
-        logger.info(output)
-        return
-
-    def run(self):
-        """
-        执行测试，入口
-        :return:
-        """
-        # 检查环境
-        # self.is_fio_installed()
-        self.gather_parameters()
-        self.generate_test_list()
-        display.display_header(self.parameters)
-        tests = self.parameters.tests
-
-        if self.parameters.quiet:
-            for idx, test in enumerate(tests):
-                self.run_test(test, idx)
-        else:
-            for idx, test in enumerate(progress_bar(tests)):
-                self.run_test(test, idx)
-
-        if not self.dry_run and self.report:
-            self.generate_report()
+        return command
 
 
 if __name__ == '__main__':

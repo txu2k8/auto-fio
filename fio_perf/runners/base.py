@@ -17,6 +17,7 @@ from numpy import linspace
 
 from config import DT_STR
 from fio_report.runner import FIOReportRunner
+from fio_report.output_json_parse import get_json_file_content
 
 
 def progress_bar(iter_obj):
@@ -61,6 +62,33 @@ def progress_bar(iter_obj):
     sys.stdout.flush()
 
 
+def parse_fio_parmfile(parmfile):
+    """
+    解析FIO配置文件
+    :param parmfile:
+    :return:
+    """
+    test_parameter = {"f_path": parmfile, "desc": parmfile}
+    with open(parmfile, 'r') as f:
+        for line in f.readlines():
+            line = line.strip('\n')
+            if not line:
+                continue
+            if line.startswith('['):
+                if "global" not in line:
+                    test_parameter['desc'] = line.strip('[').strip(']')
+            else:
+                kv = line.split('=')
+                if len(kv) == 1:
+                    test_parameter[kv[0].strip()] = ''
+                elif len(kv) == 2:
+                    test_parameter[kv[0].strip()] = kv[1].strip()
+                else:
+                    raise Exception(f"参数错误! {line}")
+    test_parameter["target"] = test_parameter["directory"] if "directory" in test_parameter else ""
+    return test_parameter
+
+
 class FIOBaseRunner(object):
     """FIO 执行引擎 - base"""
 
@@ -71,6 +99,7 @@ class FIOBaseRunner(object):
         self.desc = kwargs["desc"] if "desc" in kwargs else ""
         self.output = os.path.abspath(kwargs["output"]) if "output" in kwargs else "./"
         self.report = kwargs["report"] if "report" in kwargs else True
+        self.drop_caches = kwargs["drop_caches"] if "drop_caches" in kwargs else True
         self.dry_run = kwargs["dry_run"] if "dry_run" in kwargs else False
         self.quiet = kwargs["quiet"] if "quiet" in kwargs else False
 
@@ -101,8 +130,8 @@ class FIOBaseRunner(object):
             logger.error("Could not detect Fio version.")
             sys.exit(1)
 
-    def drop_caches(self):
-        # logger.info("清除环境cache...")
+    def exec_drop_caches(self):
+        logger.info("删除缓存...")
         command = ["echo", "3", ">", "/proc/sys/vm/drop_caches"]
         self._exec(command)
 
@@ -116,6 +145,74 @@ class FIOBaseRunner(object):
             logger.error(f"Failed to create {directory}")
             sys.exit(1)
 
+    def generate_test_list(self):
+        """
+        生成待测试项，基础类具体实现
+        :return:
+        """
+        return []
+
+    def generate_output_directory(self, test):
+        directory = os.path.join(self.output, os.path.basename(test['target']), test['bs'])
+        if "rwmixread" in test:
+            directory = os.path.join(directory, f"{test['rw']}{test['rwmixread']}")
+        else:
+            directory = os.path.join(directory, f"{test['rw']}")
+
+        self.make_directory(directory)
+        return directory
+
+    @staticmethod
+    def generate_output_filename(test):
+        if "name" in test:
+            return test["name"]
+        test_name = os.path.basename(test["f_path"]) if "f_path" in test else ""
+        try:
+            if "rwmixread" in test:
+                test_name = f"{test['bs']}_{test['rw']}{test['rwmixread']}_{test['iodepth']}_{test['numjobs']}"
+            else:
+                test_name = f"{test['bs']}_{test['rw']}_{test['iodepth']}_{test['numjobs']}"
+        except Exception as e:
+            logger.warning(e)
+        return test_name
+
+    def generate_fio_command(self, test):
+        """
+        生成FIO执行命令，继承类具体实现
+        :param test:
+        :return:
+        """
+        return []
+
+    def run_test(self, test, idx):
+        """
+        执行单项测试
+        :param test: 待执行项参数
+        :param idx: 待执行项 序号
+        :return:
+        """
+        logger.log("STAGE", f"执行FIO测试{idx+1}：{test['desc']}")
+        if self.drop_caches:
+            self.exec_drop_caches()  # 清理缓存
+
+        output_directory = self.generate_output_directory(test)
+        test_name = self.generate_output_filename(test)
+        output_file = os.path.join(output_directory, f"{test_name}.json")
+        test["name"] = test_name
+        test["output"] = output_file
+
+        command = self.generate_fio_command(test)
+        command_str = str(" ".join(command))
+        if self.dry_run:
+            logger.log("DESC", command_str)
+            return
+
+        rc, output = self._exec(command_str)
+        logger.info(output)
+        _, none_json_str = get_json_file_content(test["output"])
+        logger.warning(none_json_str)
+        return
+
     def generate_report(self):
         logger.log('DESC', '{0}数据收集{0}'.format('*' * 20))
         logger.log("STAGE", "分析结果数据、生成测试报告...")
@@ -127,32 +224,24 @@ class FIOBaseRunner(object):
         }
         FIOReportRunner(data_path=[self.output], output=self.output, comments=comments).run()
 
+    def run(self):
+        """
+        执行测试，入口
+        :return:
+        """
+        # 检查环境
+        self.is_fio_installed()
+        tests = self.generate_test_list()
 
-def parse_fio_parmfile(parmfile):
-    """
-    解析FIO配置文件
-    :param parmfile:
-    :return:
-    """
-    test_parameter = {"path": parmfile, "desc": parmfile}
-    with open(parmfile, 'r') as f:
-        for line in f.readlines():
-            line = line.strip('\n')
-            if not line:
-                continue
-            if line.startswith('['):
-                if "global" not in line:
-                    test_parameter['desc'] = line.strip('[').strip(']')
-            else:
-                kv = line.split('=')
-                if len(kv) == 1:
-                    test_parameter[kv[0].strip()] = ''
-                elif len(kv) == 2:
-                    test_parameter[kv[0].strip()] = kv[1].strip()
-                else:
-                    raise Exception(f"参数错误! {line}")
-    test_parameter["target"] = test_parameter["directory"] if "directory" in test_parameter else ""
-    return test_parameter
+        if self.quiet:
+            for idx, test in enumerate(tests):
+                self.run_test(test, idx)
+        else:
+            for idx, test in enumerate(progress_bar(tests)):
+                self.run_test(test, idx)
+
+        if not self.dry_run and self.report:
+            self.generate_report()
 
 
 if __name__ == '__main__':
