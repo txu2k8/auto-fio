@@ -8,28 +8,33 @@
 @description:
 """
 import typer
-from typing import Optional
 
 from config import __version__, __author__
 
 
-def version_callback(value: bool):
-    if value:
-        print(__version__)
-        print(__author__)
+app = typer.Typer(name="auto_fio", add_completion=False, help=f"FIO测试工具自动化 CLI.\n\n{__author__}")
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+
+def dis_version(display: bool):
+    if display:
+        print(f"Version: {__version__}")
+        print(f"Author: {__author__}")
         raise typer.Exit()
 
 
-def public(
-        version: Optional[bool] = typer.Option(
-            None, "--version", callback=version_callback, help='Show the tool version'
-        ),
-):
-    """公共参数"""
-    pass
-
-
-app = typer.Typer(name="Perf", callback=public, add_completion=False, help=f"FIO测试工具自动化 CLI.\n\n{__author__}")
+@app.callback(invoke_without_command=True, context_settings=CONTEXT_SETTINGS)
+def main(ctx: typer.Context,
+         version: bool = typer.Option(
+            False, "--version", "-v", help="Show version", callback=dis_version, is_eager=True
+         ),  # 调用 dis_version 函数， 并且优先级最高(is_eager)
+         ):
+    """
+    FIO测试工具自动化 CLI.
+    """
+    # typer.confirm("Are you sure?", default=True, abort=True)  # 给出选项，abort选项表示 No 则直接中断
+    if ctx.invoked_subcommand is None:
+        print('main process')
 
 
 if __name__ == '__main__':
